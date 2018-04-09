@@ -1,0 +1,16 @@
+#separator \x09
+#set_separator	,
+#empty_field	(empty)
+#unset_field	-
+#path	dns
+#open	2018-04-03-10-31-51
+#fields	ts	uid	id.orig_h	id.orig_p	id.resp_h	id.resp_p	proto	trans_id	rtt	query	qclass	qclass_name	qtype	qtype_name	rcode	rcode_name	AA	TC	RD	RA	Z	answers	TTLs	rejected
+#types	time	string	addr	port	addr	port	enum	count	interval	string	count	string	count	string	count	string	bool	bool	bool	bool	count	vector[string]	vector[interval]	bool
+1520837248.104240	CWSlzG4i1A4xemN7Mh	192.168.101.131	47316	192.168.101.2	53	udp	15335	0.052142	incoming.telemetry.mozilla.org	1	C_INTERNET	1	A	0	NOERROR	F	F	T	T	0	telemetry-incoming.r53-2.services.mozilla.com,pipeline-edge-prod-25-561439127.us-west-2.elb.amazonaws.com,35.167.66.243,54.149.52.189,52.11.162.210,52.36.71.24,52.10.55.151,54.191.241.246,52.38.149.111,52.89.179.237	5.000000,5.000000,5.000000,5.000000,5.000000,5.000000,5.000000,5.000000,5.000000,5.000000	F
+1520837248.104316	CWSlzG4i1A4xemN7Mh	192.168.101.131	47316	192.168.101.2	53	udp	62887	0.063458	incoming.telemetry.mozilla.org	1	C_INTERNET	28	AAAA	0	NOERROR	F	F	T	T	0	telemetry-incoming.r53-2.services.mozilla.com,pipeline-edge-prod-25-561439127.us-west-2.elb.amazonaws.com	5.000000,5.000000	F
+1520837248.654569	CWSlzG4i1A4xemN7Mh	192.168.101.131	47316	192.168.101.2	53	udp	59907	0.051175	ocsp.digicert.com	1	C_INTERNET	1	A	0	NOERROR	F	F	T	T	0	cs9.wac.phicdn.net,117.18.237.29	5.000000,5.000000	F
+1520837322.530475	CfkojR1TKSiZ0WPpYf	fe80::9c78:7d90:1cc1:ffbc	56113	ff02::1:3	5355	udp	52131	-	minhntse61958	1	C_INTERNET	255	*	-	-	F	F	F	F	0	-	-	F
+1520837322.945982	CfkojR1TKSiZ0WPpYf	fe80::9c78:7d90:1cc1:ffbc	56113	ff02::1:3	5355	udp	52131	-	minhntse61958	1	C_INTERNET	255	*	-	-	F	F	F	F	0	-	-	F
+1520837322.530577	C5H8cH3KfthYxKRCUk	192.168.101.1	56113	224.0.0.252	5355	udp	52131	-	minhntse61958	1	C_INTERNET	255	*	-	-	F	F	F	F	0	-	-	F
+1520837322.946130	C5H8cH3KfthYxKRCUk	192.168.101.1	56113	224.0.0.252	5355	udp	52131	-	minhntse61958	1	C_INTERNET	255	*	-	-	F	F	F	F	0	-	-	F
+#close	2018-04-03-10-31-52
