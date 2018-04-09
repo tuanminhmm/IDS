@@ -1,2 +1,2 @@
 # IDS
-IDS use Kmeans
+IDS using Kmeans
