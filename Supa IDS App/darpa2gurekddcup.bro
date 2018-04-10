@@ -1,3 +1,4 @@
+
 global num_conn=0;
 
 type konexioa: record {
@@ -74,7 +75,7 @@ function conn_state(c: connection, trans: string): string
 			      c$orig$size == 0 && c$resp$size == 0) )
 				return "REJ";
 			else if ( o_inactive )
-				return "RSTR";
+				return "RSTRH";
 			else
 				return "RSTR";
 			}
@@ -85,7 +86,7 @@ function conn_state(c: connection, trans: string): string
 		else if ( os == TCP_CLOSED )
 			return r_inactive ? "SH" : "S2";
 		else if ( rs == TCP_CLOSED )
-			return o_inactive ? "SH" : "S3";
+			return o_inactive ? "SHR" : "S3";
 		else if ( os == TCP_SYN_SENT && rs == TCP_INACTIVE )
 			return "S0";
 		else if ( os == TCP_ESTABLISHED && rs == TCP_ESTABLISHED )
@@ -99,7 +100,7 @@ function conn_state(c: connection, trans: string): string
 		if ( os == UDP_ACTIVE )
 			return rs == UDP_ACTIVE ? "SF" : "S0";
 		else
-			return rs == UDP_ACTIVE ? "SH" : "OTH";
+			return rs == UDP_ACTIVE ? "SHR" : "OTH";
 		}
 
 	else if ( trans == "icmp" )
@@ -111,7 +112,7 @@ function conn_state(c: connection, trans: string): string
 		    return "SH";
 		}  
 		else if ( c$resp$size > 0 )
-		  return "SH";           
+		  return "SHR";           
 		else
 		  return "OTH";
 
@@ -1323,3 +1324,4 @@ event flow_weird(name: string, src: addr, dst: addr)
 event net_weird(name: string)
 {
 }
+
