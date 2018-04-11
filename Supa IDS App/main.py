@@ -181,12 +181,18 @@ class Capture(tk.Frame):
 
 		global quit_walking
 		quit_walking = Event()
+
+		global quit
+		quit = Event()
+
 		q = Queue.Queue()
 
 		def btnStartWithoutSnortClicked():
 			btnStartWithoutSnort.config(state='disabled')
 			btnStartWithSnort.config(state='disabled')
 			btnStop.config(state='normal')
+
+			init()
 
 			alan = Thread(target=walkerLoop)
 			alan.start()
@@ -197,7 +203,7 @@ class Capture(tk.Frame):
 		def walkerLoop():
 			global quit_walking
 			while not quit_walking.is_set():
-				cap = sniff(count=100,timeout=10,iface='ens33')
+				cap = sniff(count=100,timeout=20,iface='ens33')
 				q.put(cap)
 						
 
@@ -206,8 +212,8 @@ class Capture(tk.Frame):
 		def checkPcap():
 			import exportFiles as e
 			pcapfile = 'sniff.pcap'
-			global quit_walking
-			while not quit_walking.is_set():
+			global quit
+			while not quit.is_set():
 				check = os.path.isfile(pcapfile)
 				if check == False:
 					a = q.get()
@@ -216,6 +222,11 @@ class Capture(tk.Frame):
 					e.bro()
 					e.sort()
 					e.exportFile()
+
+					try:
+						count()
+					except IOError:
+						pass
 					
 					print 'aaa'
 				else: 
@@ -224,8 +235,8 @@ class Capture(tk.Frame):
 					except OSError:
     						pass
 					print 'bbb'
-				time.sleep(10)
-			quit_walking = Event()
+				time.sleep(5)
+			quit = Event()
 
 
 		def btnStartWithSnortClicked():
@@ -246,16 +257,44 @@ class Capture(tk.Frame):
 			
 			global quit_walking
 			quit_walking.set()
+
+			global quit
+			quit.set()
 			
-		
+		def init():			
+			global total
+			total = 0
+			global tcp 
+			tcp = 0
+			global udp
+			udp = 0
+			global icmp 
+			icmp = 0
+
 		def count():
-			file = open('countpacket.txt','r')
-			i = 0
-			while i < 4:
-				print file.readline()
-				i += 1
+			file = open('countpacket.txt','r').read().splitlines()
 
-
+			global total
+			total += int(file[0])
+			print total
+					
+			global tcp
+			tcp += int(file[1])
+			print tcp
+			
+			global udp
+			udp += int(file[2])
+			print udp
+			
+			global icmp
+			icmp += int(file[3])
+			print icmp
+			
+		def runBro():
+			import exportFiles as e
+			e.bro()
+			e.sort()
+			e.exportFile()
 
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
@@ -295,7 +334,7 @@ class Capture(tk.Frame):
 		btnStop.grid(row=1, column=3)
 		btnStop.config(state='disabled', font='Arial 14 bold')
 
-		btnCheckFile = tk.Button(self, text="count", command=count, width=15, font=controller.button_font)
+		btnCheckFile = tk.Button(self, text="count", command=init, width=15, font=controller.button_font)
 		btnCheckFile.grid(row=6, columnspan=4)		
 
 #		label = tk.Label(self, text="\n", font=controller.title_font)
