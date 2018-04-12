@@ -312,7 +312,11 @@ class Capture(tk.Frame):
 		label = tk.Label(self, text="Capture", font=controller.title_font)
 		label.grid(row=0, columnspan=4, sticky=NSEW)
 		
-		btnHome = tk.Button(self, text="Home page", command=lambda: controller.show_frame("HomePage"), font=controller.button_font)
+
+		btnBack = tk.Button(self, text="Back", command=lambda: controller.show_frame("HomePage"), font=controller.button_font, width=9)
+		btnBack.grid(row=6, columnspan=4)
+
+		btnHome = tk.Button(self, text="Home page", command=lambda: controller.show_frame("HomePage"), font=controller.button_font, width=9)
 		btnHome.grid(row=7, columnspan=4)
 
 
@@ -356,7 +360,7 @@ class Capture(tk.Frame):
 		lbtotal.grid(row=4, column=3) 		
 		
 		label = tk.Label(self, text="\n\n\n\n\n", font=controller.title_font)
-		label.grid(row=6, columnspan=4, sticky=NSEW)
+		label.grid(row=5, columnspan=4, sticky=NSEW)
 
 class Graph(tk.Frame):
 
