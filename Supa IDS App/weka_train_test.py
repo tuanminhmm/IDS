@@ -53,7 +53,20 @@ class wekaTrainTest:
 			evaluation.test_model(data_test)
 			print("# clusters: " + str(evaluation.num_clusters))
 			print("# log likelihood: " + str(evaluation.log_likelihood))
-			print("# cluster assignments:\n" + str(evaluation.cluster_assignments))
+			cluster_ass = evaluation.cluster_assignments
+			print("# cluster assignments:\n" + str(cluster_ass))
+			f = open("result_data.txt","w+")
+			i = 0
+			for ins in data_test:
+				stt = "normal"
+				if(cluster_ass[i] == 0):
+					stt = "anomaly"
+				statement = str(ins) + "," + stt
+				print statement
+				f.write(statement + "\n")
+				i = i + 1
+
+			f.close()
 			return evaluation.cluster_results
 		except Exception, e:
 			raise e
