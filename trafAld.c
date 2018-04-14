@@ -16,6 +16,7 @@ int main(int argc, char **argv)
 	FILE *finigo, *ftrafAld, *attri;
 	int i,j,point,iport,itcp,iicmp,iudp,length;
 	char galdera[MaxLine];
+	char galdera1[MaxLine];
 	int noraino;
 	int nondik2, nondik100;
 	char line[MaxLine];
@@ -26,7 +27,8 @@ int main(int argc, char **argv)
 	char port[10];
 	char services[100];
 	int ph1,ph2;
-	
+	int fph,lph; //key to split
+	char filetoHong[800];
 	//Uneko konexioaren datuak
 	char line1[MaxLine];
 	int konZenb1;
@@ -46,6 +48,7 @@ int main(int argc, char **argv)
 	char orig_h2[MaxToken], resp_h2[MaxToken];
 	char duration2[MaxToken], protokoloa2[MaxToken], service2[MaxToken], flag2[MaxToken];
 	int sartuDa2;
+	int check;
 	
 	//trafiko aldagaientzat
 	int count,srv_count,serror,rerror,same_srv,diff_srv,srv_serror,srv_error,srv_diff_host;
@@ -274,6 +277,8 @@ int main(int argc, char **argv)
 	//idatzi trafAldagaiak
 	sprintf(galdera, "trafAld.arff");
 	ftrafAld = fopen(galdera, "w");	
+	sprintf(galdera1, "countpacket.txt");
+	attri = fopen(galdera1, "w");
 	iicmp = iudp = itcp = 0;
 	//Attributes
 	for (i=0;i<countatt-1;i++){
@@ -281,9 +286,31 @@ int main(int argc, char **argv)
 	}
 	for(i=0; i<inigoKop; i++){	
 		strcpy(linen,inigo[i]);
-		j=0;
 		count=0;
 		point=0;
+		fph=0;
+		lph=0;
+		while (count != 4){
+			if (linen[fph]==' ') {
+				count+=1;
+				fph+=1;}
+			else fph+=1;
+		}
+		lph=fph;
+		count=0;
+		while (count != 5){
+			if (linen[lph]==' ') {
+				count+=1;
+				lph+=1;}
+			else lph+=1;
+		}
+		for(j=fph;j<lph;j++){
+			if (linen[j]==' ') filetoHong[j-fph]=','; 			
+			else filetoHong[j-fph]=linen[j];
+		}
+		filetoHong[lph-fph-1]='\0';		
+		count=0;
+		j=0;
 		while (j<strlen(linen)){
 			if (linen[j]==' ') {
 				linen[j]=ph;	
@@ -318,80 +345,84 @@ int main(int argc, char **argv)
 		while (linen[ph2]!=','){
 			port[ph2-j]=linen[ph2];
 			ph2++;
-		} 
+		}
+		port[ph2-j]='\0'; 
 		iport = atoi(port);
 		//Check services
-		strcpy(services,"other");
-		if (iport == 5190) {strcpy(services,"aol");}
-		if (iport == 113) {strcpy(services,"auth");}
-		if (iport == 179) {strcpy(services,"bgp");}
-		if (iport == 530) {strcpy(services,"courier");}
-		if (iport == 105) {strcpy(services,"csnet_ns");}
-		if (iport == 84) {strcpy(services,"ctf");}
-		if (iport == 13) {strcpy(services,"daytime");}
-		if (iport == 9) {strcpy(services,"discard");}
-		if (iport == 53) {strcpy(services,"domain");}
-		if (iport == 1233) {strcpy(services,"domain_u");}
-		if (iport == 7) {strcpy(services,"echo");}
-		if (iport == 8) {strcpy(services,"eco_i");}
-		if (iport == 0) {strcpy(services,"ecr_i");}
-		if (iport == 520) {strcpy(services,"efs");}
-		if (iport == 512) {strcpy(services,"exec");}
-		if (iport == 79) {strcpy(services,"finger");}
-		if (iport == 21) {strcpy(services,"ftp");}
-		if (iport == 20) {strcpy(services,"ftp_data");}
-		if (iport == 70) {strcpy(services,"gopher");}
-		if (iport == 0) {strcpy(services,"harvest");}
-		if (iport == 101) {strcpy(services,"hostnames");}
-		if (iport == 80) {strcpy(services,"http");}
-		if (iport == 2784) {strcpy(services,"http_2784");}
-		if (iport == 443) {strcpy(services,"http_443");}
-		if (iport == 8001) {strcpy(services,"http_8001");}
-		if (iport == 993) {strcpy(services,"imap4");}
-		if (iport == 529) {strcpy(services,"IRC");}
-		if (iport == 102) {strcpy(services,"iso_tsap");}
-		if (iport == 543) {strcpy(services,"klogin");}
-		if (iport == 544) {strcpy(services,"kshell");}
-		if (iport == 636) {strcpy(services,"ldap");}
-		if (iport == 245) {strcpy(services,"link");}
-		if (iport == 513) {strcpy(services,"login");}
-		if (iport == 1911) {strcpy(services,"mtp");}
-		if (iport == 42) {strcpy(services,"name");}
-		if (iport == 138) {strcpy(services,"netbios_dgm");}
-		if (iport == 137) {strcpy(services,"netbios_ns");}
-		if (iport == 139) {strcpy(services,"netbios_ssn");}
-		if (iport == 15) {strcpy(services,"netstat");}
-		if (iport == 433) {strcpy(services,"nnsp");}
-		if (iport == 119) {strcpy(services,"nntp");}
-		if (iport == 123) {strcpy(services,"ntp_u");}
-		if (iport == 5432) {strcpy(services,"pm_dump");}
-		if (iport == 109) {strcpy(services,"pop_2");}
-		if (iport == 110) {strcpy(services,"pop_3");}
-		if (iport == 515) {strcpy(services,"printer");}
-		if (iport == 5 && strcmp(protocol,"icmp") == 0) {strcpy(services,"red_i");}
+		check = 1;
+		if (iport == 5190) {strcpy(services,"aol"); check=0;}
+		if (iport == 113) {strcpy(services,"auth");check=0;}
+		if (iport == 179) {strcpy(services,"bgp");check=0;}
+		if (iport == 530) {strcpy(services,"courier");check=0;}
+		if (iport == 105) {strcpy(services,"csnet_ns");check=0;}
+		if (iport == 84) {strcpy(services,"ctf");check=0;}
+		if (iport == 13) {strcpy(services,"daytime");check=0;}
+		if (iport == 9) {strcpy(services,"discard");check=0;}
+		if (iport == 53) {strcpy(services,"domain");check=0;}
+		if (iport == 1233) {strcpy(services,"domain_u");check=0;}
+		if (iport == 7) {strcpy(services,"echo");check=0;}
+		if (iport == 8) {strcpy(services,"eco_i");check=0;}
+		if (iport == 0) {strcpy(services,"ecr_i");check=0;}
+		if (iport == 520) {strcpy(services,"efs");check=0;}
+		if (iport == 512) {strcpy(services,"exec");check=0;}
+		if (iport == 79) {strcpy(services,"finger");check=0;}
+		if (iport == 21) {strcpy(services,"ftp");check=0;}
+		if (iport == 20) {strcpy(services,"ftp_data");check=0;}
+		if (iport == 70) {strcpy(services,"gopher");check=0;}
+		if (iport == 0) {strcpy(services,"harvest");check=0;}
+		if (iport == 101) {strcpy(services,"hostnames");check=0;}
+		if (iport == 80) {strcpy(services,"http");check=0;}
+		if (iport == 2784) {strcpy(services,"http_2784");check=0;}
+		if (iport == 443) {strcpy(services,"http_443");check=0;}
+		if (iport == 8001) {strcpy(services,"http_8001");check=0;}
+		if (iport == 993) {strcpy(services,"imap4");check=0;}
+		if (iport == 529) {strcpy(services,"IRC");check=0;}
+		if (iport == 102) {strcpy(services,"iso_tsap");check=0;}
+		if (iport == 543) {strcpy(services,"klogin");check=0;}
+		if (iport == 544) {strcpy(services,"kshell");check=0;}
+		if (iport == 636) {strcpy(services,"ldap");check=0;}
+		if (iport == 245) {strcpy(services,"link");check=0;}
+		if (iport == 513) {strcpy(services,"login");check=0;}
+		if (iport == 1911) {strcpy(services,"mtp");check=0;}
+		if (iport == 42) {strcpy(services,"name");check=0;}
+		if (iport == 138) {strcpy(services,"netbios_dgm");check=0;}
+		if (iport == 137) {strcpy(services,"netbios_ns");check=0;}
+		if (iport == 139) {strcpy(services,"netbios_ssn");check=0;}
+		if (iport == 15) {strcpy(services,"netstat");check=0;}
+		if (iport == 433) {strcpy(services,"nnsp");check=0;}
+		if (iport == 119) {strcpy(services,"nntp");check=0;}
+		if (iport == 123) {strcpy(services,"ntp_u");check=0;}
+		if (iport == 5432) {strcpy(services,"pm_dump");check=0;}
+		if (iport == 109) {strcpy(services,"pop_2");check=0;}
+		if (iport == 110) {strcpy(services,"pop_3");check=0;}
+		if (iport == 515) {strcpy(services,"printer");check=0;}
+		if (iport == 5 && strcmp(protocol,"icmp") == 0) {strcpy(services,"red_i");check=0;}
 		if (iport >= 71 && iport <= 74) {strcpy(services,"remote_job");}
-		if (iport == 5 && (strcmp(protocol,"tcp") == 0) || (strcmp(protocol,"udp") == 0)) {strcpy(services,"rje");}
-		if (iport == 514) {strcpy(services,"shell");}
-		if (iport == 25) {strcpy(services,"smtp");}
-		if (iport == 66) {strcpy(services,"sql_net");}
-		if (iport == 22) {strcpy(services,"ssh");}
-		if (iport == 111) {strcpy(services,"sunrpc");}
-		if (iport == 95) {strcpy(services,"supdup");}
-		if (iport == 11 && (strcmp(protocol,"tcp") == 0 || strcmp(protocol,"udp") == 0)) {strcpy(services,"systat");}
-		if (iport == 23) {strcpy(services,"telnet");}
-		if (iport == 69) {strcpy(services,"tftp_u");}
-		if (iport == 11 && strcmp(protocol,"icmp") == 0) {strcpy(services,"tim_i");}
-		if (iport == 37) {strcpy(services,"time");}
-		if (iport == 3) {strcpy(services,"urh_i");}
-		if (iport == 0) {strcpy(services,"urp_i");}
-		if (iport == 540) {strcpy(services,"uucp");}
-		if (iport == 117) {strcpy(services,"uucp_path");}
-		if (iport == 175) {strcpy(services,"vmnet");}
-		if (iport == 43) {strcpy(services,"whois");}
-		if (iport >= 6000 && iport <= 6063) {strcpy(services,"X11");}
-		if (iport == 210) {strcpy(services,"Z39_50");}
-		if (iport > 49151 && iport < 65535) {strcpy(services,"private");}
+		if (iport == 5 && (strcmp(protocol,"tcp") == 0) || (strcmp(protocol,"udp") == 0)) {strcpy(services,"rje");check=0;}
+		if (iport == 514) {strcpy(services,"shell");check=0;}
+		if (iport == 25) {strcpy(services,"smtp");check=0;}
+		if (iport == 66) {strcpy(services,"sql_net");check=0;}
+		if (iport == 22) {strcpy(services,"ssh");check=0;}
+		if (iport == 111) {strcpy(services,"sunrpc");check=0;}
+		if (iport == 95) {strcpy(services,"supdup");check=0;}
+		if (iport == 11 && (strcmp(protocol,"tcp") == 0 || strcmp(protocol,"udp") == 0)) {strcpy(services,"systat");check=0;}
+		if (iport == 23) {strcpy(services,"telnet");check=0;}
+		if (iport == 69) {strcpy(services,"tftp_u");check=0;}
+		if (iport == 13 && strcmp(protocol,"icmp") == 0) {strcpy(services,"tim_i");check=0;}
+		if (iport == 37) {strcpy(services,"time");check=0;}
+		if (iport == 3) {strcpy(services,"urh_i");check=0;}
+		if (iport == 11 && strcmp(protocol,"icmp") == 0) {strcpy(services,"urp_i");check=0;}
+		if (iport == 540) {strcpy(services,"uucp");check=0;}
+		if (iport == 117) {strcpy(services,"uucp_path");check=0;}
+		if (iport == 175) {strcpy(services,"vmnet");check=0;}
+		if (iport == 43) {strcpy(services,"whois");check=0;}
+		if (iport >= 6000 && iport <= 6063) {strcpy(services,"X11");check=0;}
+		if (iport == 210) {strcpy(services,"Z39_50");check=0;}
+		if (iport > 49151 && iport < 65535) {strcpy(services,"private");check=0;}
+		if (check == 1) strcpy(services,"other"); 
 		///////////
+		//print to screen
+		fprintf(attri, "%s,%s\n", filetoHong,services);
 		while (linen[ph1]!=','){
 			ph1++;
 		} 
@@ -422,14 +453,15 @@ int main(int argc, char **argv)
 	}
 	//fprintf(ftrafAld, "%d || tcp: %d || udp: %d || icmp: %d \n",inigoKop,itcp,iudp,iicmp);
 	fclose(ftrafAld);	
-	sprintf(galdera, "countpacket.txt");
-	attri = fopen(galdera, "w");
-	fprintf(attri,"%d\n",inigoKop);
-	fprintf(attri,"%d\n",itcp);	
-	fprintf(attri,"%d\n",iudp);	
-	fprintf(attri,"%d\n",iicmp);
-	for(i=0; i<inigoKop; i++){
-		fprintf(attri, "%s\n", inigo[i]);
-	}		
-  	fclose(attri);
+	fclose(attri);
+	//sprintf(galdera, "countpacket.txt");
+	//attri = fopen(galdera, "w");
+	//fprintf(attri,"%d\n",inigoKop);
+	//fprintf(attri,"%d\n",itcp);	
+	//fprintf(attri,"%d\n",iudp);	
+	//fprintf(attri,"%d\n",iicmp);
+	//for(i=0; i<inigoKop; i++){
+	//	fprintf(attri, "%s\n", inigo[i]);
+	//}		
+  	//fclose(attri);
 }
