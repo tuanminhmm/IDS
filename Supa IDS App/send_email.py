@@ -1,5 +1,4 @@
 import smtplib
-
 import config
 
 

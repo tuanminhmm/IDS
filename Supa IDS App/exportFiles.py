@@ -10,4 +10,3 @@ def sort():
 
 def exportFile():
 	subprocess.Popen("./trafAld.out conn_sort.list", shell=True, stdout=subprocess.PIPE).stdout.read()
-
