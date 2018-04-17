@@ -229,11 +229,11 @@ class Capture(tk.Frame):
 					e.sort()
 					e.exportFile()
 
-					w = wk('KDDTrain+.arff', 'mint.arff')
+					w = wk('KDDTrain+.arff', 'trafAld.arff')
 					w.start()
 					info = readCountFile()
 					sttFile = readResultFile()
-
+					btnShow.config(state='normal')
 					l = file_len('countpacket.txt') 
 					i = 0
 					while i >= 0 and i <= l-4:
@@ -319,7 +319,10 @@ class Capture(tk.Frame):
 		
 
 		def readResultFile():
-			file = open('result_data.txt','r')
+			try:
+				file = open('result_data.txt','r')
+			except IOError:
+				pass
 			sttFile = file.read().split('\n')
 			return sttFile
 			
@@ -330,15 +333,18 @@ class Capture(tk.Frame):
 			return i + 1
 
 		def dis():
-			win = Toplevel()
+			win = tk.Toplevel()
 			win.title('Tracking Screen')
+			btnShow.config(state='disabled')
 			
 			table = display.Table(win, ['Duration', 'Protocol', 'Port', 'Service', 'IP Source', 'IP Destination', 'Status'])
 			table.grid(sticky=W+E+N+S)
 			info = readCountFile()
 			sttFile = readResultFile()
-
-			l = file_len('countpacket.txt') 
+			try:
+				l = file_len('countpacket.txt') 
+			except IOError:
+				pass
 			i = 0
 			while i >= 0 and i <= l-4:
 				try:
@@ -350,6 +356,13 @@ class Capture(tk.Frame):
 					i = -1
 			win.update()
 			win.geometry('%sx%s'%(win.winfo_reqwidth(),530))
+			
+			def close_clicked(win):
+    				print 'nice'
+				win.destroy()
+			
+			win.wm_protocol('WM_DELETE_WINDOW', lambda win=win: close_clicked(win))
+		
 
 
 
@@ -377,6 +390,7 @@ class Capture(tk.Frame):
 		
 		btnShow = tk.Button(self, text='Tracking', command=dis, font=controller.button_font, width=10)
 		btnShow.grid(row=6, columnspan=4)
+		btnShow.config(state='disabled')
 
 		btnBack = tk.Button(self, text='Back', command=lambda: controller.show_frame('ChooseIface'), font=controller.button_font, width=10)
 		btnBack.grid(row=7, columnspan=4)

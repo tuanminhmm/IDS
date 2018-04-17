@@ -80,5 +80,4 @@ class wekaTrainTest:
 			evaluated_data = self.evaluation_data(model)
 			print evaluated_data
 		except Exception, e:
-			raise e
-			print(traceback.format_exc())
+			pass
