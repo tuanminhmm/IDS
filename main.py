@@ -101,8 +101,6 @@ class Register(tk.Frame):
 					else:
 						username = entry1.get()
 						mail = entry2.get()
-						print username
-						print mail
 
 						file = open('user_info.txt','w') 
 						file.write(username+','+mail) 
@@ -170,7 +168,6 @@ class ChooseIface(tk.Frame):
 		def showChoice():
 			global iface
 			iface = str(var.get()).split(' ')[0]
-			print iface
 			btnCapture.config(state='normal')
 
 		var = StringVar()
@@ -216,14 +213,10 @@ class Capture(tk.Frame):
 			global quit_walking
 			while not quit_walking.is_set():
 				cap = sniff(count=100,timeout=20,iface=iface)
-				print cap.show()
 				q.put(cap)
-						
-
 			quit_walking = Event()
 
 		def checkPcap():
-			
 			pcapfile = 'sniff.pcap'
 			global quit
 			while not quit.is_set():
@@ -238,18 +231,31 @@ class Capture(tk.Frame):
 
 					w = wk('KDDTrain+.arff', 'trafAld.arff')
 					w.start()
+					info = readCountFile()
+					sttFile = readResultFile()
+					btnShow.config(state='normal')
+					l = file_len('countpacket.txt') 
+					i = 0
+					while i >= 0 and i <= l-4:
+						try:
+							stt = sttFile[i].split(',')
+							r = info[i].split(',')
+							if stt[41] == 'anomaly':
+								with open('anomal_log.txt', 'a') as myfile:
+									myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[5] + '\n')
+							i += 1
+						except IndexError:
+							i = -1
+	
 					try:
 						count()
 					except IOError:
 						pass
-					
-					print 'aaa'
 				else: 
 					try:
 						os.remove(pcapfile)
 					except OSError:
     						pass
-					print 'bbb'
 				time.sleep(5)
 			quit = Event()
 
@@ -287,54 +293,78 @@ class Capture(tk.Frame):
 			icmp = 0
 
 		def count():
+			l = file_len('countpacket.txt')
 			file = open('countpacket.txt','r').read().splitlines()
 
 			global total
-			total += int(file[0])
+			total += int(file[l-4])
 			lbtotal.config(text=total)
-			print total
 					
 			global tcp
-			tcp += int(file[1])
+			tcp += int(file[l-3])
 			lbtcp.config(text=tcp)
-			print tcp
 			
 			global udp
-			udp += int(file[2])
+			udp += int(file[l-2])
 			lbudp.config(text=udp)
-			print udp
 			
 			global icmp
-			icmp += int(file[3])
+			icmp += int(file[l-1])
 			lbicmp.config(text=icmp)
-			print icmp
 
-		def dis():
-			win = Toplevel()
-			win.title('Tracking Screen')
-			
-			table = display.Table(win, ["IP Source", "IP Destination", "Duration", "Protocol", "Port", "Service", "Status"], column_minwidths=[None, None, None, None, None, None, None])
-			table.grid()
-
+		def readCountFile():
 			file = open('countpacket.txt','r')	
 			info = file.read().split('\n')
+			return info
+		
 
-			file = open('result_data.txt','r')
+		def readResultFile():
+			try:
+				file = open('result_data.txt','r')
+			except IOError:
+				pass
 			sttFile = file.read().split('\n')
+			return sttFile
+			
+		def file_len(fname):
+			with open(fname) as f:
+				for i, l in enumerate(f):
+					pass
+			return i + 1
 
+		def dis():
+			win = tk.Toplevel()
+			win.title('Tracking Screen')
+			btnShow.config(state='disabled')
+			
+			table = display.Table(win, ['Duration', 'Protocol', 'Port', 'Service', 'IP Source', 'IP Destination', 'Status'])
+			table.grid(sticky=W+E+N+S)
+			info = readCountFile()
+			sttFile = readResultFile()
+			try:
+				l = file_len('countpacket.txt') 
+			except IOError:
+				pass
 			i = 0
-			while i >= 0:
+			while i >= 0 and i <= l-4:
 				try:
 					stt = sttFile[i].split(',')
 					r = info[i].split(',')
-					table.insert_row([r[0],r[1],r[2],r[3],r[4],r[5],stt[41]])
-					print stt[41]
+					table.insert_row([r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
 					i += 1
 				except IndexError:
 					i = -1
-		#def capt():
-		#	cap = sniff(count=100,timeout=10,iface=iface)
-		#	print cap
+			win.update()
+			win.geometry('%sx%s'%(win.winfo_reqwidth(),530))
+			
+			def close_clicked(win):
+				btnShow.config(state='normal')
+				win.destroy()
+			
+			win.wm_protocol('WM_DELETE_WINDOW', lambda win=win: close_clicked(win))
+		
+
+
 
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
@@ -358,8 +388,9 @@ class Capture(tk.Frame):
 		label = tk.Label(self, text='Capture', font=controller.title_font)
 		label.grid(row=0, columnspan=4, sticky=NSEW)
 		
-		btnShow = tk.Button(self, text='Show', command=dis, font=controller.button_font, width=10)
+		btnShow = tk.Button(self, text='Tracking', command=dis, font=controller.button_font, width=10)
 		btnShow.grid(row=6, columnspan=4)
+		btnShow.config(state='disabled')
 
 		btnBack = tk.Button(self, text='Back', command=lambda: controller.show_frame('ChooseIface'), font=controller.button_font, width=10)
 		btnBack.grid(row=7, columnspan=4)
@@ -439,9 +470,8 @@ class About(tk.Frame):
 		
 	
 if __name__ == '__main__':
-	#jvm.start(system_cp=True, packages=True)
 	app = SampleApp()
-	app.geometry('800x500')
+	app.geometry('800x530')
 	app.title('Supa IDS')
 		
 	def on_closing():
