@@ -231,9 +231,9 @@ class Capture(tk.Frame):
 
 					w = wk('KDDTrain+.arff', 'trafAld.arff')
 					w.start()
+					btnShow.config(state='normal')
 					info = readCountFile()
 					sttFile = readResultFile()
-					btnShow.config(state='normal')
 					l = file_len('countpacket.txt') 
 					i = 0
 					while i >= 0 and i <= l-4:
@@ -242,7 +242,7 @@ class Capture(tk.Frame):
 							r = info[i].split(',')
 							if stt[41] == 'anomaly':
 								with open('anomal_log.txt', 'a') as myfile:
-									myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[5] + '\n')
+									myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + '\n')
 							i += 1
 						except IndexError:
 							i = -1
@@ -332,39 +332,51 @@ class Capture(tk.Frame):
 					pass
 			return i + 1
 
+		global stopReload
+		stopReload = Event()
+
 		def dis():
+			global win
+			global table
 			win = tk.Toplevel()
 			win.title('Tracking Screen')
-			btnShow.config(state='disabled')
-			
 			table = display.Table(win, ['Duration', 'Protocol', 'Port', 'Service', 'IP Source', 'IP Destination', 'Status'])
 			table.grid(sticky=W+E+N+S)
-			info = readCountFile()
-			sttFile = readResultFile()
-			try:
-				l = file_len('countpacket.txt') 
-			except IOError:
-				pass
-			i = 0
-			while i >= 0 and i <= l-4:
+			win.geometry('%sx%s'%(600,530))
+
+			loi = Thread(target=reloadTable)
+			loi.start()
+			
+
+		def reloadTable():
+			global stopReload
+			while not stopReload.is_set():
+				
+				info = readCountFile()
+				sttFile = readResultFile()
 				try:
-					stt = sttFile[i].split(',')
-					r = info[i].split(',')
-					table.insert_row([r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
-					i += 1
-				except IndexError:
-					i = -1
-			win.update()
-			win.geometry('%sx%s'%(win.winfo_reqwidth(),530))
-			
-			def close_clicked(win):
-    				print 'nice'
-				win.destroy()
-			
-			win.wm_protocol('WM_DELETE_WINDOW', lambda win=win: close_clicked(win))
-		
-
-
+					l = file_len('countpacket.txt') 
+				except IOError:
+					pass
+				i = 0
+				global j
+				j = 0
+				while i >= 0 and i <= l-4:
+					try:
+						stt = sttFile[i].split(',')
+						r = info[i].split(',')
+						table.insert_row([r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
+						i += 1
+						j = i
+					except IndexError:
+						i = -1
+	
+				win.update()
+				time.sleep(10)
+				while j > 0:
+					table.delete_row(j)
+					j -= 1
+			stopReload = Event()
 
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
