@@ -188,32 +188,38 @@ class Capture(tk.Frame):
 
 	def __init__(self, parent, controller):
 
+		q = Queue.Queue()
+		
+		global isCapturing
+		isCapturing = False
+
+		global isShowTable
+		isShowTable = False
+
 		global quit_walking
 		quit_walking = Event()
 
 		global quit
 		quit = Event()
 
-		q = Queue.Queue()
+		def btnStartWithoutSnortClicked():				
+			global isCapturing
+			isCapturing = True
 
-		global checkCloseTracking
-		checkCloseTracking = True
-
-		def btnStartWithoutSnortClicked():
 			btnStartWithoutSnort.config(state='disabled')
 			btnStartWithSnort.config(state='disabled')
 			btnStop.config(state='normal')
-			global checkStopTracking
-			checkStopTracking = False
 			init()
 
+			#start a thread to capture and put packets into queue
 			alan = Thread(target=walkerLoop)
 			alan.start()
 
+			#start a thread to get packets out of queue and analyse
 			alang = Thread(target=checkPcap)
 			alang.start()
 
-		def walkerLoop():
+		def walkerLoop(): #thread capture
 			global quit_walking
 			while not quit_walking.is_set():
 				cap = sniff(count=6000,timeout=10,iface=iface)
@@ -222,10 +228,9 @@ class Capture(tk.Frame):
 				q.put(cap)
 			quit_walking = Event()
 
-		def checkPcap():
+		def checkPcap(): #thread analyse
 			pcapfile = 'sniff.pcap'
-			global checkStopTracking
-			checkStopTracking = False
+			global isShowTable
 			global quit
 			while not quit.is_set():
 				check = os.path.isfile(pcapfile)
@@ -235,34 +240,37 @@ class Capture(tk.Frame):
 					
 					e.bro()
 					e.sort()
-					e.exportFile()
+					e.exportFile() #export countpacket.txt and trafAld.arff
 
 					w = wk('KDDTrain+.arff', 'trafAld.arff')
-					w.start()
-					if checkCloseTracking:
-						btnShow.config(state='normal')
+					w.start() #export result_data.txt
+
 					info = readCountFile()
 					sttFile = readResultFile()
 					l = file_len('countpacket.txt') 
 
-					#hien thong tin tren app
+					#show number of packets on app
 					try:
 						count()
 					except IOError:
 						pass
 
-					#hien thong tin tren bang tracking
+					#save anomaly packet to anomaly_log.txt
 					i = 0
 					while i >= 0 and i <= l-4:
 						try:
 							stt = sttFile[i].split(',')
 							r = info[i].split(',')
-							if stt[41] == 'anomaly':
-								with open('anomal_log.txt', 'a') as myfile:
+							with open('anomal_log.txt', 'a') as myfile:
+								if stt[41] == 'anomaly':
 									myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + '\n')
 							i += 1
 						except IndexError:
 							i = -1
+
+					#from here user can show tracking table	if there is no available tracking table
+					if not isShowTable:
+						btnShow.config(state='normal')
 					
 				else: 
 					try:
@@ -289,19 +297,20 @@ class Capture(tk.Frame):
 	
 			run.stopSnort()
 			
+			#stop capture
 			global quit_walking
 			quit_walking.set()
 
+			#stop analyse
 			global quit
 			quit.set()
-			
-			global checkStopTracking
-			checkStopTracking = True
-
+		
+			#stop reload table
 			global stopReload
 			stopReload.set()
 
-			
+			global isCapturing
+			isCapturing = False
 			
 		def init():			
 			global total
@@ -333,6 +342,7 @@ class Capture(tk.Frame):
 			icmp += int(file[l-1])
 			lbicmp.config(text=icmp)
 
+
 		def readCountFile():
 			file = open('countpacket.txt','r')	
 			info = file.read().split('\n')
@@ -353,32 +363,26 @@ class Capture(tk.Frame):
 					pass
 			return i + 1
 
-		global stopReload
-		stopReload = Event()
-
-		def dis():
+		def btnTrackClicked():
 			global win
-			global checkCloseTracking
-			checkCloseTracking = False
 			btnShow.config(state='disabled')
+			global isShowTable
+			isShowTable = True
 			global table
 			win = tk.Toplevel()
 			win.title('Tracking Screen')
 			table = display.Table(win, ['No.', 'Duration', 'Protocol', 'Port', 'Service', 'IP Source', 'IP Destination', 'Status'])
 			table.grid(sticky=W+E+N+S)
-			win.geometry('%sx%s'%(600,530))
+			win.geometry('%sx%s'%(570,530))
 			win.protocol('WM_DELETE_WINDOW', btnExit)
 
-			loi = Thread(target=reloadTable)
-			loi.start()
-			
 
-		def reloadTable():
-			global count
-			count = 1
-			global stopReload
-			checkwhile = False
-			while (not stopReload.is_set()) and (not checkStopTracking):
+			if isCapturing:
+				loi = Thread(target=reloadTable)
+				loi.start()
+			else:
+				print 'load table 1 time'
+				countPacket = 1
 				info = readCountFile()
 				checkwhile = True
 				sttFile = readResultFile()
@@ -391,18 +395,28 @@ class Capture(tk.Frame):
 					try:
 						stt = sttFile[i].split(',')
 						r = info[i].split(',')
-						table.insert_row([count,r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
+						table.insert_row([countPacket,r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
 						i += 1
-						count += 1
+						countPacket += 1
 					except IndexError:
 						i = -1
 	
 				win.update()
-				time.sleep(10)
-			stopReload = Event()
 
-			if (checkStopTracking) and (not checkCloseTracking) and not checkwhile:
+
+		global stopReload
+		stopReload = Event()
+
+		def reloadTable():
+			print 'start reload table'
+			global countPacket
+			countPacket = 1
+			checkwhile = False
+
+			global stopReload			
+			while not stopReload.is_set():
 				info = readCountFile()
+				checkwhile = True
 				sttFile = readResultFile()
 				try:
 					l = file_len('countpacket.txt') 
@@ -413,18 +427,21 @@ class Capture(tk.Frame):
 					try:
 						stt = sttFile[i].split(',')
 						r = info[i].split(',')
-						table.insert_row([count,r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
+						table.insert_row([countPacket,r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
 						i += 1
-						count += 1
+						countPacket += 1
 					except IndexError:
 						i = -1
 	
 				win.update()
+				time.sleep(10)
+			stopReload = Event()
+
 		def btnExit():
 			global stopReload
 			stopReload.set()
-			global checkCloseTracking
-			checkCloseTracking = True
+			global isShowTable
+			isShowTable = False
 			btnShow.config(state='normal')
 			win.destroy()
 			
@@ -452,7 +469,7 @@ class Capture(tk.Frame):
 		label = tk.Label(self, text='Capture', font=controller.title_font)
 		label.grid(row=0, columnspan=4, sticky=NSEW)
 		
-		btnShow = tk.Button(self, text='Tracking', command=dis, font=controller.button_font, width=10)
+		btnShow = tk.Button(self, text='Tracking', command=btnTrackClicked, font=controller.button_font, width=10)
 		btnShow.grid(row=6, columnspan=4)
 		btnShow.config(state='disabled')
 
@@ -539,6 +556,15 @@ if __name__ == '__main__':
 	app.title('Supa IDS')
 		
 	def on_closing():
+		global stopReload
+		stopReload.set()
+
+		global quit_walking
+		quit_walking.set()
+
+		global quit
+		quit.set()
+
 		jvm.stop()
 		run.stopSnort()
 		app.destroy()
