@@ -196,11 +196,15 @@ class Capture(tk.Frame):
 
 		q = Queue.Queue()
 
+		global checkCloseTracking
+		checkCloseTracking = True
+
 		def btnStartWithoutSnortClicked():
 			btnStartWithoutSnort.config(state='disabled')
 			btnStartWithSnort.config(state='disabled')
 			btnStop.config(state='normal')
-
+			global checkStopTracking
+			checkStopTracking = False
 			init()
 
 			alan = Thread(target=walkerLoop)
@@ -212,12 +216,16 @@ class Capture(tk.Frame):
 		def walkerLoop():
 			global quit_walking
 			while not quit_walking.is_set():
-				cap = sniff(count=100,timeout=20,iface=iface)
+				cap = sniff(count=6000,timeout=10,iface=iface)
+				while not cap:
+					cap = sniff(count=6000,timeout=10,iface=iface)
 				q.put(cap)
 			quit_walking = Event()
 
 		def checkPcap():
 			pcapfile = 'sniff.pcap'
+			global checkStopTracking
+			checkStopTracking = False
 			global quit
 			while not quit.is_set():
 				check = os.path.isfile(pcapfile)
@@ -231,10 +239,19 @@ class Capture(tk.Frame):
 
 					w = wk('KDDTrain+.arff', 'trafAld.arff')
 					w.start()
-					btnShow.config(state='normal')
+					if checkCloseTracking:
+						btnShow.config(state='normal')
 					info = readCountFile()
 					sttFile = readResultFile()
 					l = file_len('countpacket.txt') 
+
+					#hien thong tin tren app
+					try:
+						count()
+					except IOError:
+						pass
+
+					#hien thong tin tren bang tracking
 					i = 0
 					while i >= 0 and i <= l-4:
 						try:
@@ -246,11 +263,7 @@ class Capture(tk.Frame):
 							i += 1
 						except IndexError:
 							i = -1
-	
-					try:
-						count()
-					except IOError:
-						pass
+					
 				else: 
 					try:
 						os.remove(pcapfile)
@@ -281,6 +294,14 @@ class Capture(tk.Frame):
 
 			global quit
 			quit.set()
+			
+			global checkStopTracking
+			checkStopTracking = True
+
+			global stopReload
+			stopReload.set()
+
+			
 			
 		def init():			
 			global total
@@ -337,21 +358,50 @@ class Capture(tk.Frame):
 
 		def dis():
 			global win
+			global checkCloseTracking
+			checkCloseTracking = False
+			btnShow.config(state='disabled')
 			global table
 			win = tk.Toplevel()
 			win.title('Tracking Screen')
-			table = display.Table(win, ['Duration', 'Protocol', 'Port', 'Service', 'IP Source', 'IP Destination', 'Status'])
+			table = display.Table(win, ['No.', 'Duration', 'Protocol', 'Port', 'Service', 'IP Source', 'IP Destination', 'Status'])
 			table.grid(sticky=W+E+N+S)
 			win.geometry('%sx%s'%(600,530))
+			win.protocol('WM_DELETE_WINDOW', btnExit)
 
 			loi = Thread(target=reloadTable)
 			loi.start()
 			
 
 		def reloadTable():
+			global count
+			count = 1
 			global stopReload
-			while not stopReload.is_set():
-				
+			checkwhile = False
+			while (not stopReload.is_set()) and (not checkStopTracking):
+				info = readCountFile()
+				checkwhile = True
+				sttFile = readResultFile()
+				try:
+					l = file_len('countpacket.txt') 
+				except IOError:
+					pass
+				i = 0
+				while i >= 0 and i <= l-4:
+					try:
+						stt = sttFile[i].split(',')
+						r = info[i].split(',')
+						table.insert_row([count,r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
+						i += 1
+						count += 1
+					except IndexError:
+						i = -1
+	
+				win.update()
+				time.sleep(10)
+			stopReload = Event()
+
+			if (checkStopTracking) and (not checkCloseTracking) and not checkwhile:
 				info = readCountFile()
 				sttFile = readResultFile()
 				try:
@@ -359,24 +409,26 @@ class Capture(tk.Frame):
 				except IOError:
 					pass
 				i = 0
-				global j
-				j = 0
 				while i >= 0 and i <= l-4:
 					try:
 						stt = sttFile[i].split(',')
 						r = info[i].split(',')
-						table.insert_row([r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
+						table.insert_row([count,r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
 						i += 1
-						j = i
+						count += 1
 					except IndexError:
 						i = -1
 	
 				win.update()
-				time.sleep(10)
-				while j > 0:
-					table.delete_row(j)
-					j -= 1
-			stopReload = Event()
+		def btnExit():
+			global stopReload
+			stopReload.set()
+			global checkCloseTracking
+			checkCloseTracking = True
+			btnShow.config(state='normal')
+			win.destroy()
+			
+			
 
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
