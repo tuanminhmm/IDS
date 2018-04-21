@@ -107,8 +107,6 @@ class Register(tk.Frame):
 						file.close()
 						tkmb.showinfo('Success','Success')	
 				
-
-		#def btnSendClicked():
 			
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
@@ -144,9 +142,6 @@ class Register(tk.Frame):
 		btnSave = tk.Button(self, text='Save', command=btnSaveClicked, font=controller.button_font)
 		btnSave.pack()
 		
-		#btnSend = tk.Button(self, text='Send', command=btnSendClicked, font=controller.button_font)
-		#btnSend.pack()
-		
 		lb5 = Label(self, text='\n\n')
 		lb5.pack()	
 		
@@ -156,29 +151,68 @@ class Register(tk.Frame):
 
 class ChooseIface(tk.Frame):
 	def __init__(self, parent, controller):
-		tk.Frame.__init__(self, parent)
-		self.controller = controller
 
-		label = tk.Label(self, text='Choose an interface: ', font=25)
-		label.pack(anchor=W, pady=10)
-		
-		global iface
-		ifaceList = g.all_interfaces()
+		def is_number(s):
+			try:
+				int(s)
+				return True
+			except ValueError:
+				return False
 
 		def showChoice():
 			global iface
 			iface = str(var.get()).split(' ')[0]
-			btnCapture.config(state='normal')
+			print iface
 
+		def btnSaveClicked():
+			global iface
+			iface = str(var.get()).split(' ')[0]
+			if not iface:
+				tkmb.showerror('Error','Please choose an interface!')
+			elif not entry1.get():
+				tkmb.showerror('Error','Please enter the percentage!')
+			elif not is_number(entry1.get()):
+				tkmb.showerror('Error','Invalid percentage!')
+			elif (not int(entry1.get()) >= 0) or (not int(entry1.get()) <= 100):
+				tkmb.showerror('Error','Invalid percentage!')
+			else:
+				btnNext.config(state='normal')
+
+		tk.Frame.__init__(self, parent)
+		self.controller = controller
+		lb = Label(self, text='\n')
+		lb.pack()
+
+		lbl1 = Label(self, text='Please choose an interface to capture and enter percentage of anomaly packets ', font=controller.label_font)
+		lbl1.pack(padx=5, anchor=W)
+		lbl2 = Label(self, text='to receive alert emails', font=controller.label_font)
+		lbl2.pack(padx=5, anchor=W)
+		
+
+		lb3 = tk.Label(self, text=' Interfaces: ', font='Arial 13 italic bold')
+		lb3.pack(anchor=W, pady=10)
+
+		ifaceList = g.all_interfaces()
 		var = StringVar()
 		for i in ifaceList:
 			if i[0] != 'lo':
 				rd = tk.Radiobutton(self, text = i[0] + ': ' + i[1], variable = var, value = i, command=showChoice, font=15)
 				rd.pack(anchor=W)
-		
-		btnCapture = tk.Button(self, text='Capture', command=lambda: controller.show_frame('Capture'), font=controller.button_font)
-		btnCapture.pack(anchor=W, pady=20, padx=10)
-		btnCapture.config(state='disabled')
+
+		lb4 = tk.Label(self, text=' Percentage of anomaly packets: ', font='Arial 13 italic bold')
+		lb4.pack(anchor=W, pady=10)
+
+		entry1 = Entry(self, font=18, width=11)
+		entry1.pack(padx=15, anchor=W)
+		global per
+		per = entry1.get()
+
+		btnSave = tk.Button(self, text='Save', command=btnSaveClicked, font=controller.button_font, width=10)
+		btnSave.pack(pady=20, padx=10, anchor=W)
+
+		btnNext = tk.Button(self, text='Next', command=lambda: controller.show_frame('Capture'), font=controller.button_font, width=10)
+		btnNext.pack(pady=20, padx=10)
+		btnNext.config(state='disabled')
 		
 		button = tk.Button(self, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, width=10)
 		button.pack()
@@ -189,9 +223,6 @@ class Capture(tk.Frame):
 	def __init__(self, parent, controller):
 
 		q = Queue.Queue()
-		
-		global isCapturing
-		isCapturing = False
 
 		global isShowTable
 		isShowTable = False
@@ -202,14 +233,21 @@ class Capture(tk.Frame):
 		global quit
 		quit = Event()
 
-		def btnStartWithoutSnortClicked():				
-			global isCapturing
-			isCapturing = True
-
+		def btnStartWithoutSnortClicked():	
 			btnStartWithoutSnort.config(state='disabled')
 			btnStartWithSnort.config(state='disabled')
 			btnStop.config(state='normal')
+			btnShow.config(state='disabled')
+
+			lbtcp.config(text='0')
+			lbudp.config(text='0')
+			lbicmp.config(text='0')
+			lbtotal.config(text='0')
+			lbpercent.config(text='Anomaly packets: 0%')
+	
 			init()
+			
+			q.queue.clear()
 
 			#start a thread to capture and put packets into queue
 			alan = Thread(target=walkerLoop)
@@ -229,14 +267,14 @@ class Capture(tk.Frame):
 			quit_walking = Event()
 
 		def checkPcap(): #thread analyse
-			pcapfile = 'sniff.pcap'
 			global isShowTable
+
 			global quit
 			while not quit.is_set():
-				check = os.path.isfile(pcapfile)
+				check = os.path.isfile('sniff.pcap')
 				if check == False:
 					a = q.get()
-					wrpcap(pcapfile, a)
+					wrpcap('sniff.pcap', a)
 					
 					e.bro()
 					e.sort()
@@ -245,9 +283,9 @@ class Capture(tk.Frame):
 					w = wk('KDDTrain+.arff', 'trafAld.arff')
 					w.start() #export result_data.txt
 
-					info = readCountFile()
-					sttFile = readResultFile()
-					l = file_len('countpacket.txt') 
+					#show table after analysing
+					if isShowTable:
+						reloadTable()
 
 					#show number of packets on app
 					try:
@@ -256,17 +294,17 @@ class Capture(tk.Frame):
 						pass
 
 					#save anomaly packet to anomaly_log.txt
+					info = readCountFile()
+					sttFile = readResultFile()
+					l = file_len('result_data.txt')
 					i = 0
-					while i >= 0 and i <= l-4:
-						try:
-							stt = sttFile[i].split(',')
-							r = info[i].split(',')
-							with open('anomal_log.txt', 'a') as myfile:
-								if stt[41] == 'anomaly':
-									myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + '\n')
-							i += 1
-						except IndexError:
-							i = -1
+					while i >= 0 and i < l:
+						stt = sttFile[i].split(',')
+						r = info[i].split(',')
+						with open('anomaly_log.txt', 'a') as myfile:
+							if stt[41] == 'anomaly':
+								myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + '\n')
+						i += 1
 
 					#from here user can show tracking table	if there is no available tracking table
 					if not isShowTable:
@@ -274,9 +312,9 @@ class Capture(tk.Frame):
 					
 				else: 
 					try:
-						os.remove(pcapfile)
+						os.remove('sniff.pcap')
 					except OSError:
-    						pass
+    						print('cannot remove sniff.pcap')
 				time.sleep(5)
 			quit = Event()
 
@@ -293,8 +331,8 @@ class Capture(tk.Frame):
 		def btnStopClicked():
 			btnStartWithoutSnort.config(state='normal')
 			btnStartWithSnort.config(state='normal')
-			btnStop.config(state='disabled')
-	
+			btnStop.config(state='disabled')	
+
 			run.stopSnort()
 			
 			#stop capture
@@ -304,13 +342,6 @@ class Capture(tk.Frame):
 			#stop analyse
 			global quit
 			quit.set()
-		
-			#stop reload table
-			global stopReload
-			stopReload.set()
-
-			global isCapturing
-			isCapturing = False
 			
 		def init():			
 			global total
@@ -321,11 +352,12 @@ class Capture(tk.Frame):
 			udp = 0
 			global icmp 
 			icmp = 0
+			global anomalycount
+			anomalycount = 0
 
-		def count():
+		def count():			
 			l = file_len('countpacket.txt')
 			file = open('countpacket.txt','r').read().splitlines()
-
 			global total
 			total += int(file[l-4])
 			lbtotal.config(text=total)
@@ -343,6 +375,18 @@ class Capture(tk.Frame):
 			lbicmp.config(text=icmp)
 
 
+			sttFile = readResultFile()
+			l2 = file_len('result_data.txt')
+			global anomalycount
+			i = 0			
+			while i < l2:
+				stt = sttFile[i].split(',')
+				if stt[41] == 'anomaly':
+					anomalycount += 1
+				i += 1
+			percentage = anomalycount*100/total
+			lbpercent.config(text='Anomaly packets: ' + str(percentage) +'%')
+
 		def readCountFile():
 			file = open('countpacket.txt','r')	
 			info = file.read().split('\n')
@@ -350,10 +394,7 @@ class Capture(tk.Frame):
 		
 
 		def readResultFile():
-			try:
-				file = open('result_data.txt','r')
-			except IOError:
-				pass
+			file = open('result_data.txt','r')
 			sttFile = file.read().split('\n')
 			return sttFile
 			
@@ -364,6 +405,8 @@ class Capture(tk.Frame):
 			return i + 1
 
 		def btnTrackClicked():
+			global countPacket
+			countPacket = 1
 			global win
 			btnShow.config(state='disabled')
 			global isShowTable
@@ -373,73 +416,33 @@ class Capture(tk.Frame):
 			win.title('Tracking Screen')
 			table = display.Table(win, ['No.', 'Duration', 'Protocol', 'Port', 'Service', 'IP Source', 'IP Destination', 'Status'])
 			table.grid(sticky=W+E+N+S)
-			win.geometry('%sx%s'%(570,530))
+			win.geometry('%sx%s'%(560,530))
 			win.protocol('WM_DELETE_WINDOW', btnExit)
 
+			reloadTable()
 
-			if isCapturing:
-				loi = Thread(target=reloadTable)
-				loi.start()
-			else:
-				print 'load table 1 time'
-				countPacket = 1
-				info = readCountFile()
-				checkwhile = True
-				sttFile = readResultFile()
-				try:
-					l = file_len('countpacket.txt') 
-				except IOError:
-					pass
-				i = 0
-				while i >= 0 and i <= l-4:
-					try:
-						stt = sttFile[i].split(',')
-						r = info[i].split(',')
-						table.insert_row([countPacket,r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
-						i += 1
-						countPacket += 1
-					except IndexError:
-						i = -1
-	
-				win.update()
-
-
-		global stopReload
-		stopReload = Event()
 
 		def reloadTable():
-			print 'start reload table'
 			global countPacket
-			countPacket = 1
-			checkwhile = False
-
-			global stopReload			
-			while not stopReload.is_set():
-				info = readCountFile()
-				checkwhile = True
-				sttFile = readResultFile()
+			info = readCountFile()
+			sttFile = readResultFile()
+			try:
+				l = file_len('countpacket.txt') 
+			except IOError:
+				pass
+			i = 0
+			while i >= 0 and i <= l-4:
 				try:
-					l = file_len('countpacket.txt') 
-				except IOError:
-					pass
-				i = 0
-				while i >= 0 and i <= l-4:
-					try:
-						stt = sttFile[i].split(',')
-						r = info[i].split(',')
-						table.insert_row([countPacket,r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
-						i += 1
-						countPacket += 1
-					except IndexError:
-						i = -1
-	
-				win.update()
-				time.sleep(10)
-			stopReload = Event()
+					stt = sttFile[i].split(',')
+					r = info[i].split(',')
+					table.insert_row([countPacket,r[2],r[3],r[4],r[5],r[0],r[1],stt[41]])
+					i += 1
+					countPacket += 1
+				except IndexError:
+					i = -1
+			win.update()
 
 		def btnExit():
-			global stopReload
-			stopReload.set()
 			global isShowTable
 			isShowTable = False
 			btnShow.config(state='normal')
@@ -464,20 +467,21 @@ class Capture(tk.Frame):
 		self.rowconfigure(6, pad=10, weight=1)
 		self.rowconfigure(7, pad=10, weight=1)
 		self.rowconfigure(8, pad=10, weight=1)
+		self.rowconfigure(9, pad=10, weight=1)
 
 
 		label = tk.Label(self, text='Capture', font=controller.title_font)
 		label.grid(row=0, columnspan=4, sticky=NSEW)
 		
 		btnShow = tk.Button(self, text='Tracking', command=btnTrackClicked, font=controller.button_font, width=10)
-		btnShow.grid(row=6, columnspan=4)
+		btnShow.grid(row=7, columnspan=4)
 		btnShow.config(state='disabled')
 
 		btnBack = tk.Button(self, text='Back', command=lambda: controller.show_frame('ChooseIface'), font=controller.button_font, width=10)
-		btnBack.grid(row=7, columnspan=4)
+		btnBack.grid(row=8, columnspan=4)
 
 		btnHome = tk.Button(self, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, width=10)
-		btnHome.grid(row=8, columnspan=4)
+		btnHome.grid(row=9, columnspan=4)
 
 
 		v = tk.IntVar()
@@ -517,10 +521,12 @@ class Capture(tk.Frame):
 		lbicmp = tk.Label(self, text='0', font=15)
 		lbicmp.grid(row=4, column=2)
 		lbtotal = tk.Label(self, text='0', font=15, fg='blue')
-		lbtotal.grid(row=4, column=3) 		
+		lbtotal.grid(row=4, column=3) 	
+		lbpercent = tk.Label(self, text='Anomaly packets: 0%', font=15, fg='red')	
+		lbpercent.grid(row=5, column=3)
 		
-		label = tk.Label(self, text='\n\n\n\n\n', font=controller.title_font)
-		label.grid(row=5, columnspan=4, sticky=NSEW)
+		label = tk.Label(self, text='\n\n\n\n', font=controller.title_font)
+		label.grid(row=6, columnspan=4, sticky=NSEW)
 
 class Graph(tk.Frame):
 
@@ -554,11 +560,13 @@ if __name__ == '__main__':
 	app = SampleApp()
 	app.geometry('800x530')
 	app.title('Supa IDS')
+	global quit_walking
+	quit_walking = Event()
+
+	global quit
+	quit = Event()
 		
 	def on_closing():
-		global stopReload
-		stopReload.set()
-
 		global quit_walking
 		quit_walking.set()
 
