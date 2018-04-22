@@ -103,7 +103,7 @@ class Register(tk.Frame):
 						mail = entry2.get()
 
 						file = open('user_info.txt','w') 
-						file.write(username+','+mail) 
+						file.write(username+','+mail+',') 
 						file.close()
 						tkmb.showinfo('Success','Success')	
 				
@@ -151,10 +151,9 @@ class Register(tk.Frame):
 
 class ChooseIface(tk.Frame):
 	def __init__(self, parent, controller):
-
 		def is_number(s):
 			try:
-				int(s)
+				float(s)
 				return True
 			except ValueError:
 				return False
@@ -162,18 +161,19 @@ class ChooseIface(tk.Frame):
 		def showChoice():
 			global iface
 			iface = str(var.get()).split(' ')[0]
-			print iface
 
 		def btnSaveClicked():
 			global iface
 			iface = str(var.get()).split(' ')[0]
+			global per
+			per = entry1.get()
 			if not iface:
 				tkmb.showerror('Error','Please choose an interface!')
-			elif not entry1.get():
+			elif not per:
 				tkmb.showerror('Error','Please enter the percentage!')
-			elif not is_number(entry1.get()):
+			elif not is_number(per):
 				tkmb.showerror('Error','Invalid percentage!')
-			elif (not int(entry1.get()) >= 0) or (not int(entry1.get()) <= 100):
+			elif (not float(per) >= 0) or (not float(per) <= 100):
 				tkmb.showerror('Error','Invalid percentage!')
 			else:
 				btnNext.config(state='normal')
@@ -183,7 +183,7 @@ class ChooseIface(tk.Frame):
 		lb = Label(self, text='\n')
 		lb.pack()
 
-		lbl1 = Label(self, text='Please choose an interface to capture and enter percentage of anomaly packets ', font=controller.label_font)
+		lbl1 = Label(self, text='Please choose an interface to capture and enter a ratio of anomaly packets ', font=controller.label_font)
 		lbl1.pack(padx=5, anchor=W)
 		lbl2 = Label(self, text='to receive alert emails', font=controller.label_font)
 		lbl2.pack(padx=5, anchor=W)
@@ -199,14 +199,12 @@ class ChooseIface(tk.Frame):
 				rd = tk.Radiobutton(self, text = i[0] + ': ' + i[1], variable = var, value = i, command=showChoice, font=15)
 				rd.pack(anchor=W)
 
-		lb4 = tk.Label(self, text=' Percentage of anomaly packets: ', font='Arial 13 italic bold')
+		lb4 = tk.Label(self, text=' Ratio of anomaly packets: ', font='Arial 13 italic bold')
 		lb4.pack(anchor=W, pady=10)
 
 		entry1 = Entry(self, font=18, width=11)
 		entry1.pack(padx=15, anchor=W)
-		global per
-		per = entry1.get()
-
+	
 		btnSave = tk.Button(self, text='Save', command=btnSaveClicked, font=controller.button_font, width=10)
 		btnSave.pack(pady=20, padx=10, anchor=W)
 
@@ -272,8 +270,8 @@ class Capture(tk.Frame):
 			global quit
 			while not quit.is_set():
 				check = os.path.isfile('sniff.pcap')
-				if check == False:
-					a = q.get()
+				if check == False :
+					a = q.get() #if empty, wait until a flow is put in queue
 					wrpcap('sniff.pcap', a)
 					
 					e.bro()
@@ -358,7 +356,9 @@ class Capture(tk.Frame):
 		def count():			
 			l = file_len('countpacket.txt')
 			file = open('countpacket.txt','r').read().splitlines()
+			
 			global total
+			curToltal = int(file[l-4])
 			total += int(file[l-4])
 			lbtotal.config(text=total)
 					
@@ -378,14 +378,31 @@ class Capture(tk.Frame):
 			sttFile = readResultFile()
 			l2 = file_len('result_data.txt')
 			global anomalycount
+			curAnomaly = 0
 			i = 0			
 			while i < l2:
 				stt = sttFile[i].split(',')
 				if stt[41] == 'anomaly':
 					anomalycount += 1
+					curAnomaly += 1
 				i += 1
 			percentage = anomalycount*100/total
 			lbpercent.config(text='Anomaly packets: ' + str(percentage) +'%')
+
+			global rate
+			rate = curAnomaly*100/curToltal
+			print 'anomaly: ' + str(curAnomaly) + ', total: ' + str(curToltal)
+			print 'calculated ratio: ' + str(rate)
+			global per
+			print float(per)
+			if float(per) <= rate:
+				file = open('user_info.txt', 'r') 
+				info = file.read().split(',')
+				name = info[0]
+				subject = 'Supa IDS Alert!'
+				msg = 'Hi ' + name + ',\nThe ratio of anomaly packets is higher than the ratio that you allowed. Please check your system now.\n\nRegards,\nSupa IDS Team'
+				mail = info[1]
+ 				send_email.send_email(subject, mail, msg)
 
 		def readCountFile():
 			file = open('countpacket.txt','r')	
