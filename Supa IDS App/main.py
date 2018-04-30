@@ -12,6 +12,7 @@ import Queue
 
 from threading import Event
 from threading import Thread
+from datetime import datetime, timedelta
 from scapy.all import *
 
 
@@ -33,11 +34,10 @@ class SampleApp(tk.Tk):
 
 	        container = tk.Frame(self)
 	        container.pack(fill='both', expand=True)
-	        #container.grid_rowconfigure(0, weight=1)
 	        container.grid_columnconfigure(0, weight=1)
 	
 	        self.frames = {}
-	        for F in (HomePage, Register, ChooseIface, Capture, Graph, About):
+	        for F in (HomePage, Register, Capture, Settings, About):
 	            page_name = F.__name__
 	            frame = F(parent=container, controller=self)
 	            self.frames[page_name] = frame
@@ -70,17 +70,17 @@ class HomePage(tk.Frame):
 		spacer1 = Label(self, text='\n', height=1)
 		spacer1.pack()	
 
-		btnChooseIface = tk.Button(self, text='Capture', command=lambda: controller.show_frame('ChooseIface'), width=10, font=controller.button_font)
-		btnChooseIface.pack()
+		btnCapture = tk.Button(self, text='Capture', command=lambda: controller.show_frame('Capture'), width=10, font=controller.button_font)
+		btnCapture.pack()
 
 		spacer2 = Label(self, text='\n', height=1)
-		spacer2.pack()	
+		spacer2.pack()		
 
-		btnGraph = tk.Button(self, text='Show Graph', command=lambda: controller.show_frame('Graph'), width=10, font=controller.button_font)
-		btnGraph.pack()	
+		btnSettings = tk.Button(self, text='Settings', command=lambda: controller.show_frame('Settings'), width=10, font=controller.button_font)
+		btnSettings.pack()
 
-		spacer3 = Label(self, text='\n', height=1)
-		spacer3.pack()	
+		spacer2 = Label(self, text='\n', height=1)
+		spacer2.pack()		
 
 		btnAbout = tk.Button(self, text='About..', command=lambda: controller.show_frame('About'), width=10, font=controller.button_font)
 		btnAbout.pack()
@@ -149,7 +149,9 @@ class Register(tk.Frame):
 		button.pack()
 
 
-class ChooseIface(tk.Frame):
+
+
+class Settings(tk.Frame):
 	def __init__(self, parent, controller):
 		def is_number(s):
 			try:
@@ -157,16 +159,23 @@ class ChooseIface(tk.Frame):
 				return True
 			except ValueError:
 				return False
-
+		global iface
+		global per
+		global n
+		n = 3
+		per = '70'
+		
 		def showChoice():
 			global iface
 			iface = str(var.get()).split(' ')[0]
 
 		def btnSaveClicked():
 			global iface
-			iface = str(var.get()).split(' ')[0]
-			global per
 			per = entry1.get()
+			iface = str(var.get()).split(' ')[0]
+			global n
+			n = int(variable.get().split(' ')[0])
+
 			if not iface:
 				tkmb.showerror('Error','Please choose an interface!')
 			elif not per:
@@ -175,8 +184,7 @@ class ChooseIface(tk.Frame):
 				tkmb.showerror('Error','Invalid percentage!')
 			elif (not float(per) >= 0) or (not float(per) <= 100):
 				tkmb.showerror('Error','Invalid percentage!')
-			else:
-				btnNext.config(state='normal')
+			
 
 		tk.Frame.__init__(self, parent)
 		self.controller = controller
@@ -190,30 +198,50 @@ class ChooseIface(tk.Frame):
 		
 
 		lb3 = tk.Label(self, text=' Interfaces: ', font='Arial 13 italic bold')
-		lb3.pack(anchor=W, pady=10)
+		lb3.pack(anchor=W, pady=5)
 
 		ifaceList = g.all_interfaces()
+		global var
 		var = StringVar()
+		
 		for i in ifaceList:
 			if i[0] != 'lo':
 				rd = tk.Radiobutton(self, text = i[0] + ': ' + i[1], variable = var, value = i, command=showChoice, font=15)
-				rd.pack(anchor=W)
+				rd.pack(anchor=W, padx=10)
+
+		if ifaceList[0][0] != 'lo':
+			var.set(ifaceList[0])
+			iface=ifaceList[0][0]
+		else:
+			var.set(ifaceList[1])
+			iface=ifaceList[1][0]
+
 
 		lb4 = tk.Label(self, text=' Ratio of anomaly packets: ', font='Arial 13 italic bold')
 		lb4.pack(anchor=W, pady=10)
-
-		entry1 = Entry(self, font=18, width=11)
+		
+		v = StringVar()
+		entry1 = Entry(self, textvariable=v, font=18, width=11)
 		entry1.pack(padx=15, anchor=W)
+		v.set('70')
+
+		lb5 = tk.Label(self, text=' Save log files in: ', font='Arial 13 italic bold')
+		lb5.pack(anchor=W, pady=10)
+
+		OPTIONS = ["1 day", "3 days", "7 days", "30 days"]
+		variable = StringVar(self)
+		variable.set(OPTIONS[1])
+
+		w = OptionMenu(self, variable, *OPTIONS)
+		w.pack(anchor=W, padx=15)
+		w.config(font=('arial',(12)), width=9)
 	
 		btnSave = tk.Button(self, text='Save', command=btnSaveClicked, font=controller.button_font, width=10)
-		btnSave.pack(pady=20, padx=10, anchor=W)
-
-		btnNext = tk.Button(self, text='Next', command=lambda: controller.show_frame('Capture'), font=controller.button_font, width=10)
-		btnNext.pack(pady=20, padx=10)
-		btnNext.config(state='disabled')
+		btnSave.pack(pady=20, padx=16, anchor=W)
 		
 		button = tk.Button(self, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, width=10)
 		button.pack()
+
 
 
 class Capture(tk.Frame):
@@ -231,11 +259,11 @@ class Capture(tk.Frame):
 		global quit
 		quit = Event()
 
-		def btnStartWithoutSnortClicked():	
-			btnStartWithoutSnort.config(state='disabled')
-			btnStartWithSnort.config(state='disabled')
+		def btnStartClicked():	
+			btnStart.config(state='disabled')
 			btnStop.config(state='normal')
-			btnShow.config(state='disabled')
+			btnHome.config(state='disabled')	
+			btnTrack.config(state='disabled')
 
 			lbtcp.config(text='0')
 			lbudp.config(text='0')
@@ -246,6 +274,14 @@ class Capture(tk.Frame):
 			init()
 			
 			q.queue.clear()
+
+			checkCountFile = os.path.isfile('countpacket.txt')
+			if checkCountFile:
+				os.remove('countpacket.txt')
+
+			checkResultFile = os.path.isfile('result_data.txt')
+			if checkResultFile:
+				os.remove('result_data.txt')
 
 			#start a thread to capture and put packets into queue
 			alan = Thread(target=walkerLoop)
@@ -292,21 +328,26 @@ class Capture(tk.Frame):
 						pass
 
 					#save anomaly packet to anomaly_log.txt
-					info = readCountFile()
-					sttFile = readResultFile()
-					l = file_len('result_data.txt')
-					i = 0
-					while i >= 0 and i < l:
-						stt = sttFile[i].split(',')
-						r = info[i].split(',')
-						with open('anomaly_log.txt', 'a') as myfile:
-							if stt[41] == 'anomaly':
-								myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + '\n')
-						i += 1
 
-					#from here user can show tracking table	if there is no available tracking table
-					if not isShowTable:
-						btnShow.config(state='normal')
+					checkCountFile = os.path.isfile('countpacket.txt')
+					checkResultFile = os.path.isfile('result_data.txt')
+					if checkCountFile and checkResultFile:
+						info = readCountFile()
+						sttFile = readResultFile()
+						l = file_len('result_data.txt')
+						i = 0
+						while i >= 0 and i < l:
+							stt = sttFile[i].split(',')
+							r = info[i].split(',')
+							date = datetime.now().strftime('%Y-%m-%d')
+							with open('anomaly_log_' + date +'.txt', 'a') as myfile:
+								if stt[41] == 'anomaly':
+									myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + '\n')
+							i += 1
+
+						#from here user can show tracking table	if there is no available tracking table
+						if not isShowTable:
+							btnTrack.config(state='normal')
 					
 				else: 
 					try:
@@ -315,21 +356,11 @@ class Capture(tk.Frame):
     						print('cannot remove sniff.pcap')
 				time.sleep(5)
 			quit = Event()
-
-
-		def btnStartWithSnortClicked():
-			btnStartWithoutSnort.config(state='disabled')
-			btnStartWithSnort.config(state='disabled')
-			btnStop.config(state='normal')
-
-			run.runSnort()
-			btnStartWithoutSnortClicked()
-
 			
 		def btnStopClicked():
-			btnStartWithoutSnort.config(state='normal')
-			btnStartWithSnort.config(state='normal')
-			btnStop.config(state='disabled')	
+			btnStart.config(state='normal')
+			btnStop.config(state='disabled')
+			btnHome.config(state='normal')	
 
 			run.stopSnort()
 			
@@ -356,6 +387,8 @@ class Capture(tk.Frame):
 		def count():			
 			l = file_len('countpacket.txt')
 			file = open('countpacket.txt','r').read().splitlines()
+
+			global per
 			
 			global total
 			curToltal = int(file[l-4])
@@ -388,21 +421,21 @@ class Capture(tk.Frame):
 				i += 1
 			percentage = anomalycount*100/total
 			lbpercent.config(text='Anomaly packets: ' + str(percentage) +'%')
-
-			global rate
-			rate = curAnomaly*100/curToltal
-			print 'anomaly: ' + str(curAnomaly) + ', total: ' + str(curToltal)
-			print 'calculated ratio: ' + str(rate)
-			global per
-			print float(per)
-			if float(per) <= rate:
-				file = open('user_info.txt', 'r') 
-				info = file.read().split(',')
-				name = info[0]
-				subject = 'Supa IDS Alert!'
-				msg = 'Hi ' + name + ',\nThe ratio of anomaly packets is higher than the ratio that you allowed. Please check your system now.\n\nRegards,\nSupa IDS Team'
-				mail = info[1]
- 				send_email.send_email(subject, mail, msg)
+			
+			if curToltal != 0:
+				global rate
+				rate = curAnomaly*100/curToltal
+				print 'anomaly: ' + str(curAnomaly) + ', total: ' + str(curToltal)
+				print 'calculated ratio: ' + str(rate)
+				
+				if float(per) <= rate:
+					file = open('user_info.txt', 'r') 
+					info = file.read().split(',')
+					name = info[0]
+					subject = 'Supa IDS Alert!'
+					msg = 'Hi ' + name + ',\nThe ratio of anomaly packets is higher than the ratio that you allowed. Please check your system now.\n\nRegards,\nSupa IDS Team'
+					mail = info[1]
+ 					send_email.send_email(subject, mail, msg)
 
 		def readCountFile():
 			file = open('countpacket.txt','r')	
@@ -416,16 +449,16 @@ class Capture(tk.Frame):
 			return sttFile
 			
 		def file_len(fname):
-			with open(fname) as f:
-				for i, l in enumerate(f):
-					pass
-			return i + 1
+			lines = 0
+			for line in open(fname):
+ 				lines += 1
+			return lines
 
 		def btnTrackClicked():
 			global countPacket
 			countPacket = 1
 			global win
-			btnShow.config(state='disabled')
+			btnTrack.config(state='disabled')
 			global isShowTable
 			isShowTable = True
 			global table
@@ -462,7 +495,7 @@ class Capture(tk.Frame):
 		def btnExit():
 			global isShowTable
 			isShowTable = False
-			btnShow.config(state='normal')
+			btnTrack.config(state='normal')
 			win.destroy()
 			
 			
@@ -490,12 +523,9 @@ class Capture(tk.Frame):
 		label = tk.Label(self, text='Capture', font=controller.title_font)
 		label.grid(row=0, columnspan=4, sticky=NSEW)
 		
-		btnShow = tk.Button(self, text='Tracking', command=btnTrackClicked, font=controller.button_font, width=10)
-		btnShow.grid(row=7, columnspan=4)
-		btnShow.config(state='disabled')
-
-		btnBack = tk.Button(self, text='Back', command=lambda: controller.show_frame('ChooseIface'), font=controller.button_font, width=10)
-		btnBack.grid(row=8, columnspan=4)
+		btnTrack = tk.Button(self, text='Tracking', command=btnTrackClicked, font=controller.button_font, width=10)
+		btnTrack.grid(row=7, columnspan=4)
+		btnTrack.config(state='disabled')
 
 		btnHome = tk.Button(self, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, width=10)
 		btnHome.grid(row=9, columnspan=4)
@@ -503,24 +533,14 @@ class Capture(tk.Frame):
 
 		v = tk.IntVar()
 
-
-		btnStartWithSnort = tk.Button(self, text='Start (recommended)', command=btnStartWithSnortClicked, width=17, font=controller.button_font, fg='green')
-		btnStartWithSnort.grid(row=1, column=0)
-		btnStartWithSnort.config(font='Arial 14 bold')
 		
-		btnStartWithoutSnort = tk.Button(self, text='Start Without Snort', width=17, command=btnStartWithoutSnortClicked, font=controller.button_font, fg='green')
-		btnStartWithoutSnort.grid(row=1, column=1)
-		btnStartWithoutSnort.config(font='Arial 14 bold')
+		btnStart = tk.Button(self, text='Start', width=17, command=btnStartClicked, font=controller.button_font, fg='green')
+		btnStart.grid(row=1, column=0)
+		btnStart.config(font='Arial 14 bold')
 
 		btnStop = tk.Button(self, text='Stop', command=btnStopClicked, width=17, font=controller.button_font, fg='red')
 		btnStop.grid(row=1, column=3)
 		btnStop.config(state='disabled', font='Arial 14 bold')
-
-#		btnCheckFile = tk.Button(self, text='count', command=init, width=15, font=controller.button_font)
-#		btnCheckFile.grid(row=6, columnspan=4)		
-
-#		label = tk.Label(self, text='\n', font=controller.title_font)
-#		label.grid(row=2, columnspan=4, sticky=NSEW)
 
 		tcptitle = tk.Label(self, text='TCP PACKETS', font=15)
 		tcptitle.grid(row=3, column=0)
@@ -545,16 +565,6 @@ class Capture(tk.Frame):
 		label = tk.Label(self, text='\n\n\n\n', font=controller.title_font)
 		label.grid(row=6, columnspan=4, sticky=NSEW)
 
-class Graph(tk.Frame):
-
-	def __init__(self, parent, controller):
-	        tk.Frame.__init__(self, parent)
-	        self.controller = controller
-	        label = tk.Label(self, text='Graph', font=controller.title_font)
-	        label.pack(side='top', fill='x', pady=10)
-	        button = tk.Button(self, text='Home page',
-	                           command=lambda: controller.show_frame('HomePage'), font=controller.button_font, width=10)
-	        button.pack()
 
 class About(tk.Frame):
 
@@ -564,7 +574,7 @@ class About(tk.Frame):
 	        label = tk.Label(self, text='About', font=controller.title_font)
 	        label.pack(pady=10)
 
-		lbInfo = tk.Label(self, text='IDS Tool is an desktop application built by: ...\nVisit our website at: www.idstool.com\n', font=controller.label_font)
+		lbInfo = tk.Label(self, text='IDS Tool is an desktop application built by Incredibility of FPT University\nContact: supaids.app@gmail.com\n', font=controller.label_font)
 		lbInfo.config(justify=LEFT)
 		lbInfo.pack()
 
@@ -575,13 +585,35 @@ class About(tk.Frame):
 	
 if __name__ == '__main__':
 	app = SampleApp()
-	app.geometry('800x530')
+	app.geometry('800x500')
 	app.title('Supa IDS')
+
 	global quit_walking
 	quit_walking = Event()
 
 	global quit
 	quit = Event()
+
+	global stopCheckLog
+	stopCheckLog = Event()
+
+	
+
+	def checkLogFile(): #thread check log file
+		global stopCheckLog
+		while not stopCheckLog.is_set():
+			global n	
+			date_n_days_ago = datetime.now() - timedelta(days=n)
+		
+			check = os.path.isfile('anomaly_log_'+date_n_days_ago.strftime('%Y-%m-%d')+'.txt')
+			if check:
+				try:
+					os.remove('anomaly_log_'+date_n_days_ago.strftime('%Y-%m-%d')+'.txt')
+				except OSError:
+    					print('Cannot remove log file')
+
+			time.sleep(100)
+		stopCheckLog = Event()
 		
 	def on_closing():
 		global quit_walking
@@ -590,10 +622,16 @@ if __name__ == '__main__':
 		global quit
 		quit.set()
 
+		global stopCheckLog
+		stopCheckLog.set()
+
 		jvm.stop()
 		run.stopSnort()
 		app.destroy()
 	
+
+	muy = Thread(target=checkLogFile)
+	muy.start()
 
 	app.protocol('WM_DELETE_WINDOW', on_closing)
 
