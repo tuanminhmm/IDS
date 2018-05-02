@@ -306,49 +306,51 @@ class Capture(tk.Frame):
 			global quit
 			while not quit.is_set():
 				check = os.path.isfile('sniff.pcap')
-				if check == False :
-					a = q.get() #if empty, wait until a flow is put in queue
-					wrpcap('sniff.pcap', a)
+				if check == False:
+					if not q.empty():
+						a = q.get() #if empty, wait until a flow is put in queue
+						wrpcap('sniff.pcap', a)
 					
-					e.bro()
-					e.sort()
-					e.exportFile() #export countpacket.txt and trafAld.arff
+						e.bro()
+						e.sort()
+						e.exportFile() #export countpacket.txt and trafAld.arff
 
-					w = wk('KDDTrain+.arff', 'trafAld.arff')
-					w.start() #export result_data.txt
-
-					#show table after analysing
-					if isShowTable:
-						reloadTable()
-
-					#show number of packets on app
-					try:
-						count()
-					except IOError:
-						pass
-
-					#save anomaly packet to anomaly_log.txt
-
-					checkCountFile = os.path.isfile('countpacket.txt')
-					checkResultFile = os.path.isfile('result_data.txt')
-					if checkCountFile and checkResultFile:
-						info = readCountFile()
-						sttFile = readResultFile()
-						l = file_len('result_data.txt')
-						i = 0
-						while i >= 0 and i < l:
-							stt = sttFile[i].split(',')
-							r = info[i].split(',')
-							date = datetime.now().strftime('%Y-%m-%d')
-							with open('anomaly_log_' + date +'.txt', 'a') as myfile:
-								if stt[41] == 'anomaly':
-									myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + '\n')
-							i += 1
-
-						#from here user can show tracking table	if there is no available tracking table
-						if not isShowTable:
-							btnTrack.config(state='normal')
+						w = wk('KDDTrain+.arff', 'trafAld.arff')
 					
+						w.start() #export result_data.txt
+	
+						#show table after analysing
+						if isShowTable:
+							reloadTable()
+	
+						#show number of packets on app
+						try:
+							count()
+						except IOError:
+							pass
+	
+						#save anomaly packet to anomaly_log.txt
+	
+						checkCountFile = os.path.isfile('countpacket.txt')
+						checkResultFile = os.path.isfile('result_data.txt')
+						if checkCountFile and checkResultFile:
+							info = readCountFile()
+							sttFile = readResultFile()
+							l = file_len('result_data.txt')
+							i = 0
+							while i >= 0 and i < l:
+								stt = sttFile[i].split(',')
+								r = info[i].split(',')
+								date = datetime.now().strftime('%Y-%m-%d')
+								with open('anomaly_log_' + date +'.txt', 'a') as myfile:
+									if stt[41] == 'anomaly':
+										myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + '\n')
+								i += 1
+	
+							#from here user can show tracking table	if there is no available tracking table
+							if not isShowTable:
+								btnTrack.config(state='normal')
+						
 				else: 
 					try:
 						os.remove('sniff.pcap')
@@ -597,12 +599,11 @@ if __name__ == '__main__':
 	global stopCheckLog
 	stopCheckLog = Event()
 
-	
-
 	def checkLogFile(): #thread check log file
 		global stopCheckLog
 		while not stopCheckLog.is_set():
-			global n	
+			global n
+			print n	
 			date_n_days_ago = datetime.now() - timedelta(days=n)
 		
 			check = os.path.isfile('anomaly_log_'+date_n_days_ago.strftime('%Y-%m-%d')+'.txt')
@@ -611,8 +612,15 @@ if __name__ == '__main__':
 					os.remove('anomaly_log_'+date_n_days_ago.strftime('%Y-%m-%d')+'.txt')
 				except OSError:
     					print('Cannot remove log file')
+			totalSleepCount = 86400
+			while totalSleepCount > 0:
+				time.sleep(5)
+				print 'a'
+				totalSleepCount -= 5
+				if stopCheckLog.is_set():
+					totalSleepCount = 0
+					print 'b'
 
-			time.sleep(100)
 		stopCheckLog = Event()
 		
 	def on_closing():
@@ -624,6 +632,8 @@ if __name__ == '__main__':
 
 		global stopCheckLog
 		stopCheckLog.set()
+
+
 
 		jvm.stop()
 		run.stopSnort()
