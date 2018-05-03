@@ -57,32 +57,45 @@ class HomePage(tk.Frame):
 	def __init__(self, parent, controller):
 	        tk.Frame.__init__(self, parent)
 	        self.controller = controller
+
+		#logo = PhotoImage(file='Logo.png')
 	        label = tk.Label(self, text='Welcome to Supa IDS', font=controller.title_font, fg='purple')
+#		label.image = logo
 	        label.pack(side='top', pady=10)
 
 
 		spacer = Label(self, text='\n')
 		spacer.pack()	
 
-		btnRegister = tk.Button(self, text='Register', command=lambda: controller.show_frame('Register'), width=10, font=controller.button_font)
+
+		photoReg = PhotoImage(file='feather.png')
+		btnRegister = tk.Button(self, text='  Register', image=photoReg, command=lambda: controller.show_frame('Register'), width=120, font=controller.button_font, compound=LEFT, anchor=W)
+		btnRegister.image = photoReg
 		btnRegister.pack()
 
 		spacer1 = Label(self, text='\n', height=1)
 		spacer1.pack()	
 
-		btnCapture = tk.Button(self, text='Capture', command=lambda: controller.show_frame('Capture'), width=10, font=controller.button_font)
+		photoCapture = PhotoImage(file='box.png')
+		btnCapture = tk.Button(self, text='  Capture', image=photoCapture, command=lambda: controller.show_frame('Capture'), width=120, font=controller.button_font, compound=LEFT, anchor=W)
+		btnCapture.image = photoCapture
 		btnCapture.pack()
 
 		spacer2 = Label(self, text='\n', height=1)
 		spacer2.pack()		
 
-		btnSettings = tk.Button(self, text='Settings', command=lambda: controller.show_frame('Settings'), width=10, font=controller.button_font)
+
+		photoSettings = PhotoImage(file='settings.png')
+		btnSettings = tk.Button(self, text='  Settings', image=photoSettings, command=lambda: controller.show_frame('Settings'), width=120, font=controller.button_font, compound=LEFT, anchor=W)
+		btnSettings.image = photoSettings
 		btnSettings.pack()
 
 		spacer2 = Label(self, text='\n', height=1)
-		spacer2.pack()		
+		spacer2.pack()	
 
-		btnAbout = tk.Button(self, text='About..', command=lambda: controller.show_frame('About'), width=10, font=controller.button_font)
+		photoAbout = PhotoImage(file='information.png')
+		btnAbout = tk.Button(self, text='  About..', image=photoAbout, command=lambda: controller.show_frame('About'), width=120, font=controller.button_font, compound=LEFT, anchor=W)
+		btnAbout.image = photoAbout
 		btnAbout.pack()
 
 		
@@ -139,15 +152,22 @@ class Register(tk.Frame):
 			entry1.insert(0, info[0])
 			entry2.insert(0, info[1])
 
-		btnSave = tk.Button(self, text='Save', command=btnSaveClicked, font=controller.button_font)
+		lb5 = Label(self, text='\n')
+		lb5.pack()	
+		
+		photoSave = PhotoImage(file='save.png')
+		btnSave = tk.Button(self, image=photoSave, text='    Save', command=btnSaveClicked, font=controller.button_font, width=120, compound=LEFT, anchor=W)
+		btnSave.image = photoSave
 		btnSave.pack()
 		
 		lb5 = Label(self, text='\n\n')
 		lb5.pack()	
 		
-		button = tk.Button(self, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, width=10)
-		button.pack()
 
+		photoHome = PhotoImage(file='home.png')
+		btnHome = tk.Button(self, image=photoHome, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, compound=LEFT, width=120)
+		btnHome.image = photoHome
+		btnHome.pack()
 
 
 
@@ -236,11 +256,15 @@ class Settings(tk.Frame):
 		w.pack(anchor=W, padx=15)
 		w.config(font=('arial',(12)), width=9)
 	
-		btnSave = tk.Button(self, text='Save', command=btnSaveClicked, font=controller.button_font, width=10)
+		photoSave = PhotoImage(file='save.png')
+		btnSave = tk.Button(self, image=photoSave, text=' Save', command=btnSaveClicked, font=controller.button_font, width=95, compound=LEFT, anchor=W)
 		btnSave.pack(pady=20, padx=16, anchor=W)
+		btnSave.image = photoSave
 		
-		button = tk.Button(self, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, width=10)
-		button.pack()
+		photoHome = PhotoImage(file='home.png')
+		btnHome = tk.Button(self, image=photoHome, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, compound=LEFT, width=120)
+		btnHome.image = photoHome
+		btnHome.pack()
 
 
 
@@ -525,23 +549,30 @@ class Capture(tk.Frame):
 		label = tk.Label(self, text='Capture', font=controller.title_font)
 		label.grid(row=0, columnspan=4, sticky=NSEW)
 		
-		btnTrack = tk.Button(self, text='Tracking', command=btnTrackClicked, font=controller.button_font, width=10)
+		photoTrack = PhotoImage(file='list.png')
+		btnTrack = tk.Button(self, image=photoTrack, text='Tracking', command=btnTrackClicked, font=controller.button_font, compound=LEFT, width=120, anchor=W)
 		btnTrack.grid(row=7, columnspan=4)
+		btnTrack.image = photoTrack
 		btnTrack.config(state='disabled')
 
-		btnHome = tk.Button(self, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, width=10)
+		photoHome = PhotoImage(file='home.png')
+		btnHome = tk.Button(self, image=photoHome, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, compound=LEFT, width=120)
+		btnHome.image = photoHome
 		btnHome.grid(row=9, columnspan=4)
 
 
 		v = tk.IntVar()
 
-		
-		btnStart = tk.Button(self, text='Start', width=17, command=btnStartClicked, font=controller.button_font, fg='green')
+		photoStart = PhotoImage(file='play.png')
+		btnStart = tk.Button(self, image=photoStart, width=120, command=btnStartClicked, font=controller.button_font)
 		btnStart.grid(row=1, column=0)
+		btnStart.image = photoStart
 		btnStart.config(font='Arial 14 bold')
 
-		btnStop = tk.Button(self, text='Stop', command=btnStopClicked, width=17, font=controller.button_font, fg='red')
-		btnStop.grid(row=1, column=3)
+		photoStop = PhotoImage(file='stop.png')
+		btnStop = tk.Button(self, image=photoStop, command=btnStopClicked, width=120, font=controller.button_font)
+		btnStop.grid(row=1, column=1)
+		btnStop.image = photoStop
 		btnStop.config(state='disabled', font='Arial 14 bold')
 
 		tcptitle = tk.Label(self, text='TCP PACKETS', font=15)
@@ -576,13 +607,14 @@ class About(tk.Frame):
 	        label = tk.Label(self, text='About', font=controller.title_font)
 	        label.pack(pady=10)
 
-		lbInfo = tk.Label(self, text='IDS Tool is an desktop application built by Incredibility of FPT University\nContact: supaids.app@gmail.com\n', font=controller.label_font)
+		lbInfo = tk.Label(self, text='IDS Tool is an desktop application built by Incredibility team of FPT University\nContact: supaids.app@gmail.com\n', font=controller.label_font)
 		lbInfo.config(justify=LEFT)
 		lbInfo.pack()
 
-	        button = tk.Button(self, text='Home page',
-	                           command=lambda: controller.show_frame('HomePage'), font=controller.button_font, width=10)
-	        button.pack()
+	        photoHome = PhotoImage(file='home.png')
+		btnHome = tk.Button(self, image=photoHome, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, compound=LEFT, width=120)
+		btnHome.image = photoHome
+		btnHome.pack()
 		
 	
 if __name__ == '__main__':
@@ -615,11 +647,9 @@ if __name__ == '__main__':
 			totalSleepCount = 86400
 			while totalSleepCount > 0:
 				time.sleep(5)
-				print 'a'
 				totalSleepCount -= 5
 				if stopCheckLog.is_set():
 					totalSleepCount = 0
-					print 'b'
 
 		stopCheckLog = Event()
 		
