@@ -190,20 +190,19 @@ class Settings(tk.Frame):
 			iface = str(var.get()).split(' ')[0]
 
 		def btnSaveClicked():
-			global iface
+			global per
 			per = entry1.get()
-			iface = str(var.get()).split(' ')[0]
 			global n
 			n = int(variable.get().split(' ')[0])
 
-			if not iface:
-				tkmb.showerror('Error','Please choose an interface!')
-			elif not per:
+			if not per:
 				tkmb.showerror('Error','Please enter the percentage!')
 			elif not is_number(per):
 				tkmb.showerror('Error','Invalid percentage!')
 			elif (not float(per) >= 0) or (not float(per) <= 100):
 				tkmb.showerror('Error','Invalid percentage!')
+			else:
+				tkmb.showinfo('Info','Settings saved!')
 			
 
 		tk.Frame.__init__(self, parent)
@@ -237,6 +236,7 @@ class Settings(tk.Frame):
 			iface=ifaceList[1][0]
 
 
+
 		lb4 = tk.Label(self, text=' Ratio of anomaly packets: ', font='Arial 13 italic bold')
 		lb4.pack(anchor=W, pady=10)
 		
@@ -258,8 +258,9 @@ class Settings(tk.Frame):
 	
 		photoSave = PhotoImage(file='save.png')
 		btnSave = tk.Button(self, image=photoSave, text=' Save', command=btnSaveClicked, font=controller.button_font, width=95, compound=LEFT, anchor=W)
-		btnSave.pack(pady=20, padx=16, anchor=W)
 		btnSave.image = photoSave
+		btnSave.pack(pady=20, padx=16, anchor=W)
+		
 		
 		photoHome = PhotoImage(file='home.png')
 		btnHome = tk.Button(self, image=photoHome, text='Home page', command=lambda: controller.show_frame('HomePage'), font=controller.button_font, compound=LEFT, width=120)
@@ -455,6 +456,8 @@ class Capture(tk.Frame):
 				print 'calculated ratio: ' + str(rate)
 				
 				if float(per) <= rate:
+					print 'per :' + str(per)
+					
 					file = open('user_info.txt', 'r') 
 					info = file.read().split(',')
 					name = info[0]
