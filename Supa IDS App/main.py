@@ -58,12 +58,14 @@ class HomePage(tk.Frame):
 	        tk.Frame.__init__(self, parent)
 	        self.controller = controller
 
-		#logo = PhotoImage(file='Logo.png')
+
 	        label = tk.Label(self, text='Welcome to Supa IDS', font=controller.title_font, fg='purple')
-#		label.image = logo
-	        label.pack(side='top', pady=10)
-
-
+	        label.pack(side='top', pady=5)
+		logo = PhotoImage(file='Logo64.png')
+		lg = tk.Label(self, image=logo)
+		lg.image = logo
+		lg.pack()
+		
 		spacer = Label(self, text='\n')
 		spacer.pack()	
 
@@ -285,37 +287,42 @@ class Capture(tk.Frame):
 		quit = Event()
 
 		def btnStartClicked():	
-			btnStart.config(state='disabled')
-			btnStop.config(state='normal')
-			btnHome.config(state='disabled')	
-			btnTrack.config(state='disabled')
+			file = open('user_info.txt', 'r') 
+			info = file.read().split(',')
 
-			lbtcp.config(text='0')
-			lbudp.config(text='0')
-			lbicmp.config(text='0')
-			lbtotal.config(text='0')
-			lbpercent.config(text='Anomaly packets: 0%')
+ 			if info[0]:
+				btnStart.config(state='disabled')
+				btnStop.config(state='normal')
+				btnHome.config(state='disabled')	
+				btnTrack.config(state='disabled')
 	
-			init()
-			
-			q.queue.clear()
-
-			checkCountFile = os.path.isfile('countpacket.txt')
-			if checkCountFile:
-				os.remove('countpacket.txt')
-
-			checkResultFile = os.path.isfile('result_data.txt')
-			if checkResultFile:
-				os.remove('result_data.txt')
-
-			#start a thread to capture and put packets into queue
-			alan = Thread(target=walkerLoop)
-			alan.start()
-
-			#start a thread to get packets out of queue and analyse
-			alang = Thread(target=checkPcap)
-			alang.start()
-
+				lbtcp.config(text='0')
+				lbudp.config(text='0')
+				lbicmp.config(text='0')
+				lbtotal.config(text='0')
+				lbpercent.config(text='Anomaly packets: 0%')
+		
+				init()
+				
+				q.queue.clear()
+	
+				checkCountFile = os.path.isfile('countpacket.txt')
+				if checkCountFile:
+					os.remove('countpacket.txt')
+	
+				checkResultFile = os.path.isfile('result_data.txt')
+				if checkResultFile:
+					os.remove('result_data.txt')
+	
+				#start a thread to capture and put packets into queue
+				alan = Thread(target=walkerLoop)
+				alan.start()
+	
+				#start a thread to get packets out of queue and analyse
+				alang = Thread(target=checkPcap)
+				alang.start()
+			else:
+				tkmb.showerror('Error','Please sign in to receive alert email!')
 		def walkerLoop(): #thread capture
 			global quit_walking
 			while not quit_walking.is_set():
@@ -368,8 +375,8 @@ class Capture(tk.Frame):
 								r = info[i].split(',')
 								date = datetime.now().strftime('%Y-%m-%d')
 								with open('anomaly_log_' + date +'.txt', 'a') as myfile:
-									if stt[41] == 'anomaly':
-										myfile.write('Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + '\n')
+									#if stt[41] == 'anomaly':
+									myfile.write(datetime.now().strftime('%H:%M:%S') + ' - Duration: ' + r[2] + ' - Protocol: ' + r[3] + ' - Port: ' + r[4] + ' - Service: ' + r[5] + ' - IP Source: ' + r[0] + ' - IP Destination: ' + r[1] + ' - Status: ' + stt[41] + '\n')
 								i += 1
 	
 							#from here user can show tracking table	if there is no available tracking table
@@ -446,17 +453,20 @@ class Capture(tk.Frame):
 					anomalycount += 1
 					curAnomaly += 1
 				i += 1
-			percentage = anomalycount*100/total
+			if total > 0:
+				percentage = anomalycount*100/total
+			else:
+				percentage = 0
 			lbpercent.config(text='Anomaly packets: ' + str(percentage) +'%')
 			
 			if curToltal != 0:
 				global rate
 				rate = curAnomaly*100/curToltal
-				print 'anomaly: ' + str(curAnomaly) + ', total: ' + str(curToltal)
-				print 'calculated ratio: ' + str(rate)
+				#print 'anomaly: ' + str(curAnomaly) + ', total: ' + str(curToltal)
+				#print 'calculated ratio: ' + str(rate)
 				
 				if float(per) <= rate:
-					print 'per :' + str(per)
+					#print 'per :' + str(per)
 					
 					file = open('user_info.txt', 'r') 
 					info = file.read().split(',')
@@ -610,7 +620,7 @@ class About(tk.Frame):
 	        label = tk.Label(self, text='About', font=controller.title_font)
 	        label.pack(pady=10)
 
-		lbInfo = tk.Label(self, text='IDS Tool is an desktop application built by Incredibility team of FPT University\nContact: supaids.app@gmail.com\n', font=controller.label_font)
+		lbInfo = tk.Label(self, text='IDS Tool is an desktop application built by Incredibility team of FPT University\nContact: supaids.app@gmail.com\n\n', font=controller.label_font)
 		lbInfo.config(justify=LEFT)
 		lbInfo.pack()
 
@@ -624,6 +634,8 @@ if __name__ == '__main__':
 	app = SampleApp()
 	app.geometry('800x500')
 	app.title('Supa IDS')
+	icon = PhotoImage(file='feather.png')
+	app.tk.call('wm', 'iconphoto', app._w, icon)  
 
 	global quit_walking
 	quit_walking = Event()
@@ -638,7 +650,6 @@ if __name__ == '__main__':
 		global stopCheckLog
 		while not stopCheckLog.is_set():
 			global n
-			print n	
 			date_n_days_ago = datetime.now() - timedelta(days=n)
 		
 			check = os.path.isfile('anomaly_log_'+date_n_days_ago.strftime('%Y-%m-%d')+'.txt')

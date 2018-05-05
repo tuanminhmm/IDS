@@ -14,6 +14,7 @@ from weka.classifiers import Classifier, Evaluation
 from weka.filters import Filter
 from weka.clusterers import Clusterer, ClusterEvaluation, FilteredClusterer
 
+
 class wekaTrainTest:
 	def __init__ (self, datasetName, dataTestName):
 		#datasetName: name of the data set will be import to train (.arff format)
@@ -51,10 +52,10 @@ class wekaTrainTest:
 
 			evaluation.set_model(model)
 			evaluation.test_model(data_test)
-			print("# clusters: " + str(evaluation.num_clusters))
-			print("# log likelihood: " + str(evaluation.log_likelihood))
+			#print("# clusters: " + str(evaluation.num_clusters))
+			#print("# log likelihood: " + str(evaluation.log_likelihood))
 			cluster_ass = evaluation.cluster_assignments
-			print("# cluster assignments:\n" + str(cluster_ass))
+			#print("# cluster assignments:\n" + str(cluster_ass))
 			f = open("result_data.txt","w+")
 			i = 0
 			for ins in data_test:
@@ -78,6 +79,6 @@ class wekaTrainTest:
 			jvm.start()
 			model = self.train_data()
 			evaluated_data = self.evaluation_data(model)
-			print evaluated_data
+			#print evaluated_data
 		except Exception, e:
 			pass
